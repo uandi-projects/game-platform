@@ -166,8 +166,14 @@ export default function DashboardPage() {
                     onPlay={async () => {
                       setIsCreatingGame(game.id);
                       try {
-                        const instance = await createGameInstance({ gameId: game.id });
-                        router.push(`/game/${instance.code}`);
+                        if (game.isCustom) {
+                          // Redirect to custom game creation page
+                          router.push(`/game/${game.id}/create`);
+                        } else {
+                          // Create regular game instance directly
+                          const instance = await createGameInstance({ gameId: game.id });
+                          router.push(`/game/${instance.code}`);
+                        }
                       } catch (error) {
                         console.error("Failed to create game instance:", error);
                       } finally {
@@ -263,6 +269,7 @@ function GameCard({ game, isCreating, onPlay }: {
     name: string;
     type: string;
     description: string;
+    isCustom?: boolean;
   };
   isCreating: boolean;
   onPlay: () => void;
@@ -272,9 +279,16 @@ function GameCard({ game, isCreating, onPlay }: {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <Gamepad2 className="h-6 w-6 text-muted-foreground" />
-          <Badge variant={game.type === "single-player" ? "secondary" : "default"}>
-            {game.type === "single-player" ? "Single Player" : "Multiplayer"}
-          </Badge>
+          <div className="flex gap-2">
+            <Badge variant={game.type === "single-player" ? "secondary" : "default"}>
+              {game.type === "single-player" ? "Single Player" : "Multiplayer"}
+            </Badge>
+            {game.isCustom && (
+              <Badge variant="outline" className="text-blue-600 border-blue-600">
+                Custom
+              </Badge>
+            )}
+          </div>
         </div>
         <h3 className="text-xl font-bold mb-2">{game.name}</h3>
         <p className="text-muted-foreground text-sm mb-4">{game.description}</p>
@@ -287,10 +301,10 @@ function GameCard({ game, isCreating, onPlay }: {
           {isCreating ? (
             <>
               <Loader className="mr-2 h-4 w-4" />
-              Starting...
+              {game.isCustom ? "Opening..." : "Starting..."}
             </>
           ) : (
-            "Play Now"
+            game.isCustom ? "Configure & Play" : "Play Now"
           )}
         </Button>
       </CardContent>

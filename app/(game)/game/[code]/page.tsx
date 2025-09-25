@@ -21,18 +21,30 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
   const gameInstance = useQuery(api.games.getGameInstanceByCode, { code: gameCode });
   const joinGame = useMutation(api.games.joinGame);
 
-  // Redirect based on game type
+  // Redirect based on game type - use replace to avoid flashing
   useEffect(() => {
     if (gameInstance && gameInstance.gameId) {
       if (gameInstance.type === "multiplayer") {
         // Redirect multiplayer games to room first
-        router.push(`/room/${gameCode}`);
+        router.replace(`/room/${gameCode}`);
       } else {
-        // Direct to single player game
-        router.push(`/game/${gameInstance.gameId}/${gameCode}`);
+        // For single-player games, redirect immediately without any join screen
+        router.replace(`/game/${gameInstance.gameId}/${gameCode}`);
       }
     }
   }, [gameInstance, router, gameCode]);
+
+  // For single-player games, don't show any content - just redirect
+  if (gameInstance && gameInstance.type === "single-player") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader />
+          <p className="mt-2 text-sm text-muted-foreground">Starting game...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Validate game code format
   if (!/^[A-Z0-9]{6}$/.test(gameCode)) {
@@ -54,11 +66,14 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
     );
   }
 
-  // Show loading state
+  // Show minimal loading state while redirecting
   if (currentUser === undefined || gameInstance === undefined) {
     return (
-      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
-        <Loader />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader />
+          <p className="mt-2 text-sm text-muted-foreground">Joining game...</p>
+        </div>
       </div>
     );
   }

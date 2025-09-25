@@ -47,6 +47,7 @@ const schema = defineSchema({
     createdAt: v.number(),
     gameStartedAt: v.optional(v.number()), // When the game actually started
     status: v.union(v.literal("waiting"), v.literal("active"), v.literal("completed")),
+    customConfig: v.optional(v.any()), // JSON config for custom games
   }).index("by_code", ["code"])
     .index("by_creator", ["createdBy"])
     .index("by_game_id", ["gameId"]),

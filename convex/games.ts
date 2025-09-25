@@ -40,6 +40,24 @@ export const getAvailableGames = query({
           "description": "Race against others to solve math problems",
           "showTimer": true,
           "maxTime": 180
+        },
+        {
+          "id": "custom-math-quiz",
+          "name": "Custom Math Quiz",
+          "type": "single-player",
+          "description": "Create your own math quiz with custom settings",
+          "showTimer": true,
+          "maxTime": 300,
+          "isCustom": true
+        },
+        {
+          "id": "custom-math-race",
+          "name": "Custom Math Race",
+          "type": "multiplayer",
+          "description": "Create a custom math race with your own settings",
+          "showTimer": true,
+          "maxTime": 180,
+          "isCustom": true
         }
       ]
     };
@@ -60,8 +78,9 @@ export const getAvailableGames = query({
 export const createGameInstance = mutation({
   args: {
     gameId: v.string(),
+    customConfig: v.optional(v.any()), // Custom configuration for custom games
   },
-  handler: async (ctx, { gameId }) => {
+  handler: async (ctx, { gameId, customConfig }) => {
     const user = await getAuthenticatedUser(ctx);
 
     // Load game data to get type
@@ -82,6 +101,24 @@ export const createGameInstance = mutation({
           "description": "Race against others to solve math problems",
           "showTimer": true,
           "maxTime": 180
+        },
+        {
+          "id": "custom-math-quiz",
+          "name": "Custom Math Quiz",
+          "type": "single-player",
+          "description": "Create your own math quiz with custom settings",
+          "showTimer": true,
+          "maxTime": 300,
+          "isCustom": true
+        },
+        {
+          "id": "custom-math-race",
+          "name": "Custom Math Race",
+          "type": "multiplayer",
+          "description": "Create a custom math race with your own settings",
+          "showTimer": true,
+          "maxTime": 180,
+          "isCustom": true
         }
       ]
     };
@@ -112,6 +149,7 @@ export const createGameInstance = mutation({
         creatorParticipating: game.type === "multiplayer" ? true : undefined,
         createdAt: Date.now(),
         status: "waiting",
+        customConfig: customConfig || undefined,
       });
 
       return {
@@ -131,6 +169,7 @@ export const createGameInstance = mutation({
       creatorParticipating: game.type === "multiplayer" ? true : undefined,
       createdAt: Date.now(),
       status: "waiting",
+      customConfig: customConfig || undefined,
     });
 
     return {
@@ -336,6 +375,42 @@ export const startMultiplayerGame = mutation({
   },
 });
 
+// Start a single-player game
+export const startSinglePlayerGame = mutation({
+  args: {
+    code: v.string(),
+  },
+  handler: async (ctx, { code }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new ConvexError("Authentication required");
+    }
+
+    const gameInstance = await ctx.db
+      .query("gameInstances")
+      .withIndex("by_code", (q) => q.eq("code", code))
+      .first();
+
+    if (!gameInstance) {
+      throw new ConvexError("Game not found");
+    }
+
+    if (gameInstance.type !== "single-player") {
+      throw new ConvexError("This is not a single-player game");
+    }
+
+    // Only set start time if not already started
+    if (!gameInstance.gameStartedAt) {
+      await ctx.db.patch(gameInstance._id, {
+        status: "active",
+        gameStartedAt: Date.now(),
+      });
+    }
+
+    return await ctx.db.get(gameInstance._id);
+  },
+});
+
 // Update game progress for a participant
 export const updateGameProgress = mutation({
   args: {
@@ -423,5 +498,108 @@ export const getGameProgress = query({
         }
         return b.score - a.score;
       });
+  },
+});
+
+// Mark a game as completed
+export const completeGame = mutation({
+  args: {
+    gameCode: v.string(),
+    finalScore: v.number(),
+    totalQuestions: v.number(),
+    completedAt: v.number(),
+    guestName: v.optional(v.string()),
+  },
+  handler: async (ctx, { gameCode, finalScore, totalQuestions, completedAt, guestName }) => {
+    const userId = await getAuthUserId(ctx);
+
+    // Find the game instance
+    const gameInstance = await ctx.db
+      .query("gameInstances")
+      .withIndex("by_code", (q) => q.eq("code", gameCode))
+      .first();
+
+    if (!gameInstance) {
+      throw new ConvexError("Game not found");
+    }
+
+    let participantId: string;
+    let participantName: string;
+    let participantType: "authenticated" | "guest";
+
+    if (userId && !guestName) {
+      // Authenticated user
+      const user = await ctx.db.get(userId);
+      if (!user) throw new ConvexError("User not found");
+
+      participantId = userId;
+      participantName = user.name || user.email || "Unknown User";
+      participantType = "authenticated";
+    } else if (guestName) {
+      // Guest user
+      participantId = `guest-${guestName}`;
+      participantName = guestName;
+      participantType = "guest";
+    } else {
+      throw new ConvexError("Must be authenticated or provide guest name");
+    }
+
+    // Update or create final progress record
+    const existingProgress = await ctx.db
+      .query("gameProgress")
+      .withIndex("by_participant", (q) => q.eq("gameCode", gameCode).eq("participantId", participantId))
+      .first();
+
+    if (existingProgress) {
+      // Mark as completed
+      await ctx.db.patch(existingProgress._id, {
+        questionsAnswered: totalQuestions,
+        totalQuestions,
+        score: finalScore,
+        isActive: false, // Mark as inactive since game is complete
+        lastUpdated: completedAt,
+      });
+    } else {
+      // Create completion record
+      await ctx.db.insert("gameProgress", {
+        gameCode,
+        participantId,
+        participantName,
+        participantType,
+        questionsAnswered: totalQuestions,
+        totalQuestions,
+        score: finalScore,
+        isActive: false, // Game is complete
+        lastUpdated: completedAt,
+      });
+    }
+
+    // For single-player games, mark the game instance as completed
+    if (gameInstance.type === "single-player") {
+      await ctx.db.patch(gameInstance._id, {
+        status: "completed",
+      });
+    }
+
+    // For multiplayer games, check if all participants have finished
+    // (This is a simplified approach - in a more complex system, you might want different logic)
+    if (gameInstance.type === "multiplayer") {
+      const allProgress = await ctx.db
+        .query("gameProgress")
+        .withIndex("by_game_code", (q) => q.eq("gameCode", gameCode))
+        .collect();
+
+      const totalParticipants = gameInstance.participants.length + (gameInstance.guestParticipants?.length || 0);
+      const completedParticipants = allProgress.filter(p => !p.isActive).length;
+
+      // If all participants have completed, mark game as completed
+      if (completedParticipants >= totalParticipants) {
+        await ctx.db.patch(gameInstance._id, {
+          status: "completed",
+        });
+      }
+    }
+
+    return { success: true };
   },
 });

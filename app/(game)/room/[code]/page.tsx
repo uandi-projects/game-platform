@@ -164,7 +164,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl mb-2">Math Race</CardTitle>
+            <CardTitle className="text-3xl mb-2">
+              {gameInstance.customConfig ? 'Custom Math Race' : 'Math Race'}
+            </CardTitle>
             <p className="text-muted-foreground">
               Game Code: <span className="font-mono font-bold text-lg">{gameCode}</span>
             </p>
@@ -178,11 +180,27 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 <span className="font-semibold">
                   {gameParticipants.allParticipants.length} Players Joined
                 </span>
+                {gameInstance.customConfig && (
+                  <Badge variant="outline" className="text-blue-600 border-blue-600 ml-2">
+                    Custom
+                  </Badge>
+                )}
               </div>
               <div className="text-sm text-muted-foreground space-y-1">
-                <p>• 10 addition and subtraction questions</p>
-                <p>• 3 minutes to complete</p>
-                <p>• Race against other players!</p>
+                {gameInstance.customConfig ? (
+                  <>
+                    <p>• {gameInstance.customConfig.questionCount} addition and subtraction questions</p>
+                    <p>• {Math.floor(gameInstance.customConfig.timeLimit / 60)}m {gameInstance.customConfig.timeLimit % 60 > 0 ? `${gameInstance.customConfig.timeLimit % 60}s` : ''} to complete</p>
+                    <p>• Race against other players!</p>
+                    <p className="text-blue-600 font-medium">• Custom configuration applied</p>
+                  </>
+                ) : (
+                  <>
+                    <p>• 10 addition and subtraction questions</p>
+                    <p>• 3 minutes to complete</p>
+                    <p>• Race against other players!</p>
+                  </>
+                )}
               </div>
             </div>
 

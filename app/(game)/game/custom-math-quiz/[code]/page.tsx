@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Loader } from "@/components/ui/loader";
-import { Trophy, Clock, CheckCircle, XCircle, Users, LogOut } from "lucide-react";
-import LiveLeaderboard from "../../../_components/LiveLeaderboard";
+import { Trophy, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
 
 interface Question {
   id: number;
@@ -18,7 +17,7 @@ interface Question {
   answer: number;
 }
 
-export default function MultiPlayerMathGame({ params }: { params: Promise<{ code: string }> }) {
+export default function CustomMathQuiz({ params }: { params: Promise<{ code: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const gameCode = resolvedParams.code.toUpperCase();
@@ -27,6 +26,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
   const gameInstance = useQuery(api.games.getGameInstanceByCode, { code: gameCode });
   const gameProgress = useQuery(api.games.getGameProgress, { gameCode });
   const updateGameProgress = useMutation(api.games.updateGameProgress);
+  const startSinglePlayerGame = useMutation(api.games.startSinglePlayerGame);
   const completeGame = useMutation(api.games.completeGame);
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -35,61 +35,76 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const [timeLeft, setTimeLeft] = useState(300); // Default 5 minutes
   const [score, setScore] = useState(0);
   const [guestName] = useState<string | null>(null);
 
-  // Generate random math questions
-  useEffect(() => {
-    const generateQuestions = () => {
-      const newQuestions: Question[] = [];
-      for (let i = 0; i < 10; i++) {
-        let num1 = Math.floor(Math.random() * 50) + 1;
-        let num2 = Math.floor(Math.random() * 30) + 1;
-        const operation = Math.random() > 0.5 ? '+' : '-';
+  // Get custom config from game instance
+  const customConfig = gameInstance?.customConfig as { timeLimit: number; questionCount: number } | undefined;
+  const timeLimit = customConfig?.timeLimit || 300;
+  const questionCount = customConfig?.questionCount || 10;
 
-        // For subtraction, ensure first number is bigger than second
-        if (operation === '-' && num1 < num2) {
-          [num1, num2] = [num2, num1]; // Swap the numbers
+  // Generate random math questions based on custom config
+  useEffect(() => {
+    if (questionCount > 0) {
+      const generateQuestions = () => {
+        const newQuestions: Question[] = [];
+        for (let i = 0; i < questionCount; i++) {
+          let num1 = Math.floor(Math.random() * 50) + 1;
+          let num2 = Math.floor(Math.random() * 30) + 1;
+          const operation = Math.random() > 0.5 ? '+' : '-';
+
+          // For subtraction, ensure first number is bigger than second
+          if (operation === '-' && num1 < num2) {
+            [num1, num2] = [num2, num1]; // Swap the numbers
+          }
+
+          const question = `${num1} ${operation} ${num2}`;
+          const answer = operation === '+' ? num1 + num2 : num1 - num2;
+
+          newQuestions.push({
+            id: i + 1,
+            question,
+            answer
+          });
         }
+        setQuestions(newQuestions);
+      };
 
-        const question = `${num1} ${operation} ${num2}`;
-        const answer = operation === '+' ? num1 + num2 : num1 - num2;
-
-        newQuestions.push({
-          id: i + 1,
-          question,
-          answer
-        });
-      }
-      setQuestions(newQuestions);
-    };
-
-    generateQuestions();
-  }, []);
-
-  // Auto-start the game when component loads
-  useEffect(() => {
-    if (questions.length > 0 && !gameStarted) {
-      setGameStarted(true);
+      generateQuestions();
     }
-  }, [questions.length, gameStarted]);
+  }, [questionCount]);
 
-  // Restore progress from database when component loads
+  // Auto-start the game when component loads (like multiplayer)
   useEffect(() => {
-    if (gameProgress && questions.length > 0) {
+    if (questions.length > 0 && !gameStarted && gameInstance) {
+      // If game already has a start time, it was already started - just set local state
+      if (gameInstance.gameStartedAt) {
+        setGameStarted(true);
+      } else {
+        // Start the game immediately for single-player
+        startSinglePlayerGame({ code: gameCode })
+          .then(() => {
+            setGameStarted(true);
+          })
+          .catch(console.error);
+      }
+    }
+  }, [questions.length, gameStarted, gameInstance, gameCode, startSinglePlayerGame]);
+
+  // Restore progress from database when component loads (run only once)
+  useEffect(() => {
+    if (gameProgress && questions.length > 0 && currentUser && !gameStarted) {
       // Find current user's progress record
       const userProgress = gameProgress.find(progress => {
-        if (currentUser) {
-          return progress.participantId === currentUser._id;
-        } else {
-          return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
-        }
+        return progress.participantId === currentUser._id;
       });
 
       if (userProgress && userProgress.questionsAnswered > 0) {
         // Restore game state from database
-        setCurrentQuestionIndex(userProgress.questionsAnswered);
+        // currentQuestionIndex should be the next question to answer
+        const nextQuestionIndex = Math.min(userProgress.questionsAnswered, questions.length - 1);
+        setCurrentQuestionIndex(nextQuestionIndex);
         setScore(userProgress.score);
 
         // Create answers array with correct length - we don't store individual answers
@@ -103,33 +118,54 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         }
 
         // Set game as started if progress exists
-        if (!gameStarted) {
-          setGameStarted(true);
-        }
+        setGameStarted(true);
       }
     }
-  }, [gameProgress, currentUser, questions.length, guestName, gameStarted]);
+  }, [gameProgress, currentUser, questions.length]);
 
-  // Update progress in database
+  // Update progress in database (only when answers change, not on restoration)
   useEffect(() => {
-    if (gameStarted && questions.length > 0 && (currentUser || guestName)) {
+    if (gameStarted && questions.length > 0 && currentUser && userAnswers.length > 0) {
       // Only update if we have actual answers (not restored from database)
-      const hasActualAnswers = userAnswers.length > 0 && !userAnswers.every(answer => answer === 1);
-      const currentScore = hasActualAnswers
-        ? userAnswers.filter((answer, index) => answer === questions[index]?.answer).length
-        : score; // Use stored score for restored progress
+      const hasActualAnswers = !userAnswers.every(answer => answer === 1);
 
-      updateGameProgress({
-        gameCode,
-        questionsAnswered: Math.max(0, currentQuestionIndex),
-        totalQuestions: questions.length,
-        score: currentScore,
-        guestName: !currentUser ? (guestName || "Guest Player") : undefined,
-      }).catch(console.error);
+      if (hasActualAnswers) {
+        const currentScore = userAnswers.filter((answer, index) => answer === questions[index]?.answer).length;
+
+        updateGameProgress({
+          gameCode,
+          questionsAnswered: Math.max(0, currentQuestionIndex),
+          totalQuestions: questions.length,
+          score: currentScore,
+          guestName: undefined, // Single-player authenticated users don't need guestName
+        }).catch(console.error);
+      }
     }
-  }, [currentQuestionIndex, userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
+  }, [userAnswers, gameStarted, questions, gameCode, currentUser, updateGameProgress]);
 
-  const calculateFinalScore = useCallback(async (answers: number[]) => {
+  // Timer logic - synchronized with game start time
+  useEffect(() => {
+    if (gameStarted && !gameFinished && gameInstance?.gameStartedAt) {
+      const timer = setInterval(() => {
+        const gameStartTime = gameInstance.gameStartedAt!;
+        const maxTime = timeLimit * 1000; // Custom time limit in milliseconds
+        const elapsedTime = Date.now() - gameStartTime;
+        const remaining = Math.max(0, Math.ceil((maxTime - elapsedTime) / 1000));
+
+        setTimeLeft(remaining);
+
+        if (remaining <= 0) {
+          calculateFinalScore(userAnswers).then(() => {
+            setGameFinished(true);
+          });
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [gameStarted, gameFinished, gameInstance?.gameStartedAt, userAnswers, timeLimit]);
+
+  const calculateFinalScore = async (answers: number[]) => {
     let correctAnswers = 0;
     questions.forEach((question, index) => {
       if (answers[index] === question.answer) {
@@ -152,29 +188,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     }
 
     return correctAnswers;
-  }, [questions, completeGame, gameCode, currentUser, guestName]);
-
-  // Timer logic - synchronized with game start time
-  useEffect(() => {
-    if (gameStarted && !gameFinished && gameInstance?.gameStartedAt) {
-      const timer = setInterval(() => {
-        const gameStartTime = gameInstance.gameStartedAt!;
-        const maxTime = 180000; // 3 minutes in milliseconds
-        const elapsedTime = Date.now() - gameStartTime;
-        const remaining = Math.max(0, Math.ceil((maxTime - elapsedTime) / 1000));
-
-        setTimeLeft(remaining);
-
-        if (remaining <= 0) {
-          calculateFinalScore(userAnswers).then(() => {
-            setGameFinished(true);
-          });
-        }
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [gameStarted, gameFinished, gameInstance?.gameStartedAt, userAnswers, calculateFinalScore]);
+  };
 
   const handleAnswerSubmit = async () => {
     const answer = parseInt(currentAnswer);
@@ -240,6 +254,18 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     );
   }
 
+  // Game loading/starting - show loading state instead of waiting room
+  if (!gameStarted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader />
+          <p className="mt-4 text-muted-foreground">Starting your custom math quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Game finished
   if (gameFinished) {
     const percentage = Math.round((score / questions.length) * 100);
@@ -249,7 +275,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         <Card className="max-w-lg w-full">
           <CardHeader className="text-center">
             <Trophy className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
-            <CardTitle className="text-2xl">Race Complete!</CardTitle>
+            <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
@@ -258,23 +284,8 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
               <div className="text-2xl font-semibold mt-2">{percentage}%</div>
             </div>
 
-            {/* Leaderboard placeholder */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-center">Final Leaderboard:</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 rounded bg-yellow-50 border border-yellow-200">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-yellow-600">1.</span>
-                    <span className="font-semibold">{currentUser?.name || "You"}</span>
-                  </div>
-                  <span className="font-bold">{score}/10</span>
-                </div>
-                {/* Note: In a real implementation, you'd show other players' scores */}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-semibold">Your Results:</h3>
+              <h3 className="font-semibold">Results:</h3>
               {questions.map((question, index) => {
                 const userAnswer = userAnswers[index];
                 const isCorrect = userAnswer !== undefined && userAnswer === question.answer;
@@ -326,14 +337,10 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold">Math Race</h1>
+            <h1 className="text-2xl font-bold">Custom Math Quiz</h1>
             <p className="text-muted-foreground">Code: {gameCode}</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <span>{gameInstance.participants?.length || 0}</span>
-            </div>
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
               <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
@@ -388,14 +395,11 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
                 disabled={!currentAnswer.trim()}
                 className="px-8"
               >
-                {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Race'}
+                {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
               </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Live leaderboard */}
-        <LiveLeaderboard gameCode={gameCode} />
       </div>
     </div>
   );

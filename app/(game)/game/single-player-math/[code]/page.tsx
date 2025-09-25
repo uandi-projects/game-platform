@@ -1,15 +1,15 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Loader } from "@/components/ui/loader";
-import { Trophy, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Trophy, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
 
 interface Question {
   id: number;
@@ -24,6 +24,10 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
 
   const currentUser = useQuery(api.users.getCurrentUser);
   const gameInstance = useQuery(api.games.getGameInstanceByCode, { code: gameCode });
+  const gameProgress = useQuery(api.games.getGameProgress, { gameCode });
+  const updateGameProgress = useMutation(api.games.updateGameProgress);
+  const startSinglePlayerGame = useMutation(api.games.startSinglePlayerGame);
+  const completeGame = useMutation(api.games.completeGame);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -33,6 +37,7 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
   const [gameFinished, setGameFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [score, setScore] = useState(0);
+  const [guestName] = useState<string | null>(null);
 
   // Generate random math questions
   useEffect(() => {
@@ -63,25 +68,100 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
     generateQuestions();
   }, []);
 
-  // Timer logic
+  // Auto-start the game when component loads (like multiplayer)
   useEffect(() => {
-    if (gameStarted && !gameFinished && timeLeft > 0) {
+    if (questions.length > 0 && !gameStarted && gameInstance) {
+      // If game already has a start time, it was already started - just set local state
+      if (gameInstance.gameStartedAt) {
+        setGameStarted(true);
+      } else {
+        // Start the game immediately for single-player
+        startSinglePlayerGame({ code: gameCode })
+          .then(() => {
+            setGameStarted(true);
+          })
+          .catch(console.error);
+      }
+    }
+  }, [questions.length, gameStarted, gameInstance, gameCode, startSinglePlayerGame]);
+
+  // Restore progress from database when component loads
+  useEffect(() => {
+    if (gameProgress && questions.length > 0) {
+      // Find current user's progress record
+      const userProgress = gameProgress.find(progress => {
+        if (currentUser) {
+          return progress.participantId === currentUser._id;
+        } else {
+          return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
+        }
+      });
+
+      if (userProgress && userProgress.questionsAnswered > 0) {
+        // Restore game state from database
+        setCurrentQuestionIndex(userProgress.questionsAnswered);
+        setScore(userProgress.score);
+
+        // Create answers array with correct length - we don't store individual answers
+        // but we need the array length to match questions answered
+        const restoredAnswers = new Array(userProgress.questionsAnswered).fill(1); // Use 1 instead of 0 as placeholder
+        setUserAnswers(restoredAnswers);
+
+        // If user completed all questions, mark as finished
+        if (userProgress.questionsAnswered >= questions.length) {
+          setGameFinished(true);
+        }
+
+        // Set game as started if progress exists
+        if (!gameStarted) {
+          setGameStarted(true);
+        }
+      }
+    }
+  }, [gameProgress, currentUser, questions.length, guestName, gameStarted]);
+
+  // Update progress in database
+  useEffect(() => {
+    if (gameStarted && questions.length > 0 && currentUser) {
+      // Only update if we have actual answers (not restored from database)
+      const hasActualAnswers = userAnswers.length > 0 && !userAnswers.every(answer => answer === 1);
+      const currentScore = hasActualAnswers
+        ? userAnswers.filter((answer, index) => answer === questions[index]?.answer).length
+        : score; // Use stored score for restored progress
+
+      updateGameProgress({
+        gameCode,
+        questionsAnswered: Math.max(0, currentQuestionIndex),
+        totalQuestions: questions.length,
+        score: currentScore,
+        guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+      }).catch(console.error);
+    }
+  }, [currentQuestionIndex, userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
+
+  // Timer logic - synchronized with game start time
+  useEffect(() => {
+    if (gameStarted && !gameFinished && gameInstance?.gameStartedAt) {
       const timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            calculateFinalScore(userAnswers);
+        const gameStartTime = gameInstance.gameStartedAt!;
+        const maxTime = 300000; // 5 minutes in milliseconds
+        const elapsedTime = Date.now() - gameStartTime;
+        const remaining = Math.max(0, Math.ceil((maxTime - elapsedTime) / 1000));
+
+        setTimeLeft(remaining);
+
+        if (remaining <= 0) {
+          calculateFinalScore(userAnswers).then(() => {
             setGameFinished(true);
-            return 0;
-          }
-          return prev - 1;
-        });
+          });
+        }
       }, 1000);
 
       return () => clearInterval(timer);
     }
-  }, [gameStarted, gameFinished, timeLeft]);
+  }, [gameStarted, gameFinished, gameInstance?.gameStartedAt, userAnswers]);
 
-  const calculateFinalScore = (answers: number[]) => {
+  const calculateFinalScore = async (answers: number[]) => {
     let correctAnswers = 0;
     questions.forEach((question, index) => {
       if (answers[index] === question.answer) {
@@ -89,21 +169,54 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
       }
     });
     setScore(correctAnswers);
+
+    // Mark game as completed on server
+    try {
+      await completeGame({
+        gameCode,
+        finalScore: correctAnswers,
+        totalQuestions: questions.length,
+        completedAt: Date.now(),
+        guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+      });
+    } catch (error) {
+      console.error("Failed to mark game as completed:", error);
+    }
+
     return correctAnswers;
   };
 
-  const handleAnswerSubmit = () => {
+  const handleAnswerSubmit = async () => {
     const answer = parseInt(currentAnswer);
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestionIndex] = answer;
     setUserAnswers(newAnswers);
     setCurrentAnswer("");
 
+    const newQuestionIndex = currentQuestionIndex + 1;
+    const currentScore = newAnswers.filter((ans, index) => ans === questions[index]?.answer).length;
+
+    // Update local score state immediately
+    setScore(currentScore);
+
+    // Immediately save progress to database
+    try {
+      await updateGameProgress({
+        gameCode,
+        questionsAnswered: newQuestionIndex,
+        totalQuestions: questions.length,
+        score: currentScore,
+        guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+      });
+    } catch (error) {
+      console.error("Failed to save progress:", error);
+    }
+
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestionIndex(newQuestionIndex);
     } else {
       // Calculate final score with the completed answers
-      calculateFinalScore(newAnswers);
+      await calculateFinalScore(newAnswers);
       setGameFinished(true);
     }
   };
@@ -137,34 +250,14 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
     );
   }
 
-  // Game not started yet
+  // Game loading/starting - show loading state instead of waiting room
   if (!gameStarted) {
     return (
-      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
-        <Card className="max-w-lg w-full">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Math Quiz Solo</CardTitle>
-            <p className="text-muted-foreground">
-              Game Code: <span className="font-mono font-bold">{gameCode}</span>
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center space-y-2">
-              <p>• 10 addition and subtraction questions</p>
-              <p>• 5 minutes to complete</p>
-              <p>• Answer as many as you can!</p>
-            </div>
-            <Button
-              onClick={() => setGameStarted(true)}
-              className="w-full"
-            >
-              Start Game
-            </Button>
-            <Link href="/dashboard" className="block text-center text-sm text-muted-foreground hover:underline">
-              Back to Dashboard
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader />
+          <p className="mt-4 text-muted-foreground">Starting your math quiz...</p>
+        </div>
       </div>
     );
   }
@@ -248,6 +341,15 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
               <Clock className="h-5 w-5" />
               <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
             </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Exit</span>
+            </Button>
           </div>
         </div>
 

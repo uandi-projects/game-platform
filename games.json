@@ -15,6 +15,24 @@
       "description": "Race against others to solve math problems",
       "showTimer": true,
       "maxTime": 180
+    },
+    {
+      "id": "custom-math-quiz",
+      "name": "Custom Math Quiz",
+      "type": "single-player",
+      "description": "Create your own math quiz with custom settings",
+      "showTimer": true,
+      "maxTime": 300,
+      "isCustom": true
+    },
+    {
+      "id": "custom-math-race",
+      "name": "Custom Math Race",
+      "type": "multiplayer",
+      "description": "Create a custom math race with your own settings",
+      "showTimer": true,
+      "maxTime": 180,
+      "isCustom": true
     }
   ]
 }

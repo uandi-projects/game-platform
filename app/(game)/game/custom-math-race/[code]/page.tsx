@@ -18,7 +18,7 @@ interface Question {
   answer: number;
 }
 
-export default function MultiPlayerMathGame({ params }: { params: Promise<{ code: string }> }) {
+export default function CustomMathRace({ params }: { params: Promise<{ code: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const gameCode = resolvedParams.code.toUpperCase();
@@ -35,38 +35,45 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const [timeLeft, setTimeLeft] = useState(180); // Default 3 minutes
   const [score, setScore] = useState(0);
   const [guestName] = useState<string | null>(null);
 
-  // Generate random math questions
+  // Get custom config from game instance
+  const customConfig = gameInstance?.customConfig as { timeLimit: number; questionCount: number } | undefined;
+  const timeLimit = customConfig?.timeLimit || 180;
+  const questionCount = customConfig?.questionCount || 10;
+
+  // Generate random math questions based on custom config
   useEffect(() => {
-    const generateQuestions = () => {
-      const newQuestions: Question[] = [];
-      for (let i = 0; i < 10; i++) {
-        let num1 = Math.floor(Math.random() * 50) + 1;
-        let num2 = Math.floor(Math.random() * 30) + 1;
-        const operation = Math.random() > 0.5 ? '+' : '-';
+    if (questionCount > 0) {
+      const generateQuestions = () => {
+        const newQuestions: Question[] = [];
+        for (let i = 0; i < questionCount; i++) {
+          let num1 = Math.floor(Math.random() * 50) + 1;
+          let num2 = Math.floor(Math.random() * 30) + 1;
+          const operation = Math.random() > 0.5 ? '+' : '-';
 
-        // For subtraction, ensure first number is bigger than second
-        if (operation === '-' && num1 < num2) {
-          [num1, num2] = [num2, num1]; // Swap the numbers
+          // For subtraction, ensure first number is bigger than second
+          if (operation === '-' && num1 < num2) {
+            [num1, num2] = [num2, num1]; // Swap the numbers
+          }
+
+          const question = `${num1} ${operation} ${num2}`;
+          const answer = operation === '+' ? num1 + num2 : num1 - num2;
+
+          newQuestions.push({
+            id: i + 1,
+            question,
+            answer
+          });
         }
+        setQuestions(newQuestions);
+      };
 
-        const question = `${num1} ${operation} ${num2}`;
-        const answer = operation === '+' ? num1 + num2 : num1 - num2;
-
-        newQuestions.push({
-          id: i + 1,
-          question,
-          answer
-        });
-      }
-      setQuestions(newQuestions);
-    };
-
-    generateQuestions();
-  }, []);
+      generateQuestions();
+    }
+  }, [questionCount]);
 
   // Auto-start the game when component loads
   useEffect(() => {
@@ -75,9 +82,9 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     }
   }, [questions.length, gameStarted]);
 
-  // Restore progress from database when component loads
+  // Restore progress from database when component loads (run only once)
   useEffect(() => {
-    if (gameProgress && questions.length > 0) {
+    if (gameProgress && questions.length > 0 && (currentUser || guestName) && !gameStarted) {
       // Find current user's progress record
       const userProgress = gameProgress.find(progress => {
         if (currentUser) {
@@ -89,7 +96,9 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
 
       if (userProgress && userProgress.questionsAnswered > 0) {
         // Restore game state from database
-        setCurrentQuestionIndex(userProgress.questionsAnswered);
+        // currentQuestionIndex should be the next question to answer
+        const nextQuestionIndex = Math.min(userProgress.questionsAnswered, questions.length - 1);
+        setCurrentQuestionIndex(nextQuestionIndex);
         setScore(userProgress.score);
 
         // Create answers array with correct length - we don't store individual answers
@@ -103,31 +112,30 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         }
 
         // Set game as started if progress exists
-        if (!gameStarted) {
-          setGameStarted(true);
-        }
+        setGameStarted(true);
       }
     }
-  }, [gameProgress, currentUser, questions.length, guestName, gameStarted]);
+  }, [gameProgress, currentUser, questions.length, guestName]);
 
-  // Update progress in database
+  // Update progress in database (only when answers change, not on restoration)
   useEffect(() => {
-    if (gameStarted && questions.length > 0 && (currentUser || guestName)) {
+    if (gameStarted && questions.length > 0 && (currentUser || guestName) && userAnswers.length > 0) {
       // Only update if we have actual answers (not restored from database)
-      const hasActualAnswers = userAnswers.length > 0 && !userAnswers.every(answer => answer === 1);
-      const currentScore = hasActualAnswers
-        ? userAnswers.filter((answer, index) => answer === questions[index]?.answer).length
-        : score; // Use stored score for restored progress
+      const hasActualAnswers = !userAnswers.every(answer => answer === 1);
 
-      updateGameProgress({
-        gameCode,
-        questionsAnswered: Math.max(0, currentQuestionIndex),
-        totalQuestions: questions.length,
-        score: currentScore,
-        guestName: !currentUser ? (guestName || "Guest Player") : undefined,
-      }).catch(console.error);
+      if (hasActualAnswers) {
+        const currentScore = userAnswers.filter((answer, index) => answer === questions[index]?.answer).length;
+
+        updateGameProgress({
+          gameCode,
+          questionsAnswered: Math.max(0, currentQuestionIndex),
+          totalQuestions: questions.length,
+          score: currentScore,
+          guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        }).catch(console.error);
+      }
     }
-  }, [currentQuestionIndex, userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
+  }, [userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress]);
 
   const calculateFinalScore = useCallback(async (answers: number[]) => {
     let correctAnswers = 0;
@@ -159,7 +167,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     if (gameStarted && !gameFinished && gameInstance?.gameStartedAt) {
       const timer = setInterval(() => {
         const gameStartTime = gameInstance.gameStartedAt!;
-        const maxTime = 180000; // 3 minutes in milliseconds
+        const maxTime = timeLimit * 1000; // Custom time limit in milliseconds
         const elapsedTime = Date.now() - gameStartTime;
         const remaining = Math.max(0, Math.ceil((maxTime - elapsedTime) / 1000));
 
@@ -174,7 +182,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
 
       return () => clearInterval(timer);
     }
-  }, [gameStarted, gameFinished, gameInstance?.gameStartedAt, userAnswers, calculateFinalScore]);
+  }, [gameStarted, gameFinished, gameInstance?.gameStartedAt, userAnswers, calculateFinalScore, timeLimit]);
 
   const handleAnswerSubmit = async () => {
     const answer = parseInt(currentAnswer);
@@ -249,7 +257,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         <Card className="max-w-lg w-full">
           <CardHeader className="text-center">
             <Trophy className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
-            <CardTitle className="text-2xl">Race Complete!</CardTitle>
+            <CardTitle className="text-2xl">Custom Race Complete!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
@@ -267,7 +275,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
                     <span className="font-bold text-yellow-600">1.</span>
                     <span className="font-semibold">{currentUser?.name || "You"}</span>
                   </div>
-                  <span className="font-bold">{score}/10</span>
+                  <span className="font-bold">{score}/{questionCount}</span>
                 </div>
                 {/* Note: In a real implementation, you'd show other players' scores */}
               </div>
@@ -326,7 +334,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold">Math Race</h1>
+            <h1 className="text-2xl font-bold">Custom Math Race</h1>
             <p className="text-muted-foreground">Code: {gameCode}</p>
           </div>
           <div className="flex items-center gap-4">
