@@ -14,8 +14,6 @@ import Header from "@/components/Header";
 import { Trophy, Calendar, ArrowRight } from "lucide-react";
 
 export default function Home() {
-  const { isAuthenticated } = useConvexAuth();
-  const currentUser = useQuery(api.users.getCurrentUser);
 
   return (
     <div>
@@ -32,7 +30,6 @@ function Content() {
   const { isAuthenticated } = useConvexAuth();
   const currentUser = useQuery(api.users.getCurrentUser);
   const recentActivity = useQuery(api.games.getUserGameHistory);
-  const router = useRouter();
 
   // Show loading state
   if (isAuthenticated && currentUser === undefined) {

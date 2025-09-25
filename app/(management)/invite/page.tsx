@@ -97,8 +97,8 @@ export default function InvitePage() {
 
       await signIn("password", signUpFormData);
       router.push("/");
-    } catch (error: any) {
-      setSignupError(error.message || "Failed to create account");
+    } catch (error) {
+      setSignupError(error instanceof Error ? error.message : "Failed to create account");
     } finally {
       setSignupLoading(false);
     }
@@ -144,7 +144,7 @@ export default function InvitePage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Create Your Account</CardTitle>
             <CardDescription>
-              You've been invited to join. Create a password for <strong>{email}</strong>
+              You&apos;ve been invited to join. Create a password for <strong>{email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>

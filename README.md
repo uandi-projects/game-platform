@@ -1,474 +1,633 @@
-# Convex Auth Email Invite System
+# 🎮 Educational Game Platform
 
-A complete Next.js + Convex authentication system with email-based invites and role-based access control. This project provides a secure, admin-managed authentication system where users can only join through invitations.
+A comprehensive multiplayer educational gaming platform built with Next.js and Convex. Create, play, and track educational games with real-time multiplayer support, progress analytics, and role-based access control.
 
-## Features
+![Platform Preview](https://img.shields.io/badge/Next.js-15-black?logo=next.js) ![Convex](https://img.shields.io/badge/Convex-Database-orange) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-cyan?logo=tailwindcss)
 
-- **No Public Sign-up**: Users cannot create accounts directly - they must be invited
-- **Role-Based Access Control**: Admin and User roles with hierarchical permissions
-- **Email Invitations**: Secure invite system using Resend with time-limited tokens
-- **Password Reset**: Secure password reset functionality
-- **Bootstrap Admin**: CLI tool to create the first admin user
-- **Interactive CLI Tools**: Create users and send invites via command line
+## 🌟 Key Features
 
-## Tech Stack
+### 🎯 Game Types
+- **Single-Player Games**: Individual learning experiences with progress tracking
+- **Multiplayer Games**: Real-time competitive games with live leaderboards
+- **Custom Games**: Create personalized games with custom configurations
+- **Math Games**: Built-in math quiz games with varying difficulty levels
 
-- **Backend**: [Convex](https://convex.dev/) - Database and server functions
-- **Frontend**: [Next.js 15](https://nextjs.org/) with App Router
-- **Authentication**: [Convex Auth](https://labs.convex.dev/auth) with Password provider
-- **Email**: [Resend](https://resend.com) for transactional emails
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI**: React 19 with TypeScript
+### 👥 Role-Based Access Control
+- **Students**: Play games, track progress, view achievements
+- **Teachers**: Create games, invite students, view class analytics
+- **Admins**: Full platform management, user administration, system analytics
 
-## Quick Start
+### 📊 Analytics & Progress Tracking
+- **Personal Progress**: Individual learning statistics and achievements
+- **Game History**: Complete record of all games played
+- **Teacher Analytics**: Student performance insights and engagement metrics
+- **Real-time Leaderboards**: Live game progress and scoring
 
-1. **Clone and install dependencies**:
-   ```bash
-   git clone <this-repo>
-   cd convex-auth-practice
-   npm install
-   ```
+### 🔐 Security & Administration
+- **Invite-Only System**: No public signup - users join via email invitations
+- **Email Authentication**: Secure password-based authentication with reset functionality
+- **Session Management**: Secure user sessions with JWT tokens
+- **Admin Controls**: Comprehensive user and system management
 
-2. **Set up Convex**:
-   ```bash
-   npx convex dev
-   ```
+## 🚀 Quick Start
 
-3. **Configure environment variables** (see Setup section below)
+### Prerequisites
+- Node.js 18+ installed
+- A Convex account ([convex.dev](https://convex.dev))
+- A Resend account for email ([resend.com](https://resend.com))
 
-4. **Create your first admin user**:
-   ```bash
-   npm run bootstrap-admin
-   ```
-
-5. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-
-## Email Invite Authentication System with Role-Based Access Control
-
-This project implements a comprehensive authentication system using Convex Auth and Resend with role-based access control (RBAC). Here's how it works:
-
-### Architecture Overview
-
-- **No public sign-up**: Users cannot create accounts directly
-- **Role-based access**: Two roles - Admin and User with hierarchical permissions
-- **Admin-only invites**: Only authenticated admins can invite new users
-- **Email-based invites**: Invitations are sent via Resend with secure tokens
-- **Password creation**: Invited users create their password on first access
-- **Token security**: One-time use tokens with 7-day expiration
-- **Password reset**: Secure password reset functionality with 1-hour expiry tokens
-
-## Complete Setup Guide
-
-### 1. Convex Setup
-
-After cloning the repository, you'll need to set up your Convex backend:
+### 1. Installation
 
 ```bash
-# Install dependencies
+git clone https://github.com/your-username/educational-game-platform
+cd educational-game-platform
 npm install
+```
 
-# Initialize Convex (creates a new deployment)
+### 2. Convex Setup
+
+```bash
+# Initialize Convex development environment
 npx convex dev
 ```
 
-This will:
-- Create a new Convex deployment
-- Generate your `NEXT_PUBLIC_CONVEX_URL`
-- Set up the database schema
-- Start the Convex development server
+This will create your Convex deployment and generate environment variables.
 
-### 2. Environment Variables
+### 3. Environment Configuration
 
-Create a `.env.local` file in the project root:
+Create `.env.local` with your configuration:
 
 ```bash
-# Convex (automatically generated by `npx convex dev`)
+# Convex (auto-generated)
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+CONVEX_DEPLOYMENT=dev:your-deployment
 
-# Email configuration (required for invites)
-RESEND_API_KEY=re_your_api_key_here
+# Email Service (Resend)
+RESEND_API_KEY=re_your_resend_api_key
 FROM_EMAIL=noreply@yourdomain.com
+
+# App Configuration
 NEXT_PUBLIC_APP_DOMAIN=http://localhost:3000
+SITE_URL=http://localhost:3000
+
+# JWT Configuration (generate new keys for production)
+JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----..."
+JWKS={"keys":[{"use":"sig","kty":"RSA","n":"...","e":"AQAB"}]}
+
+SETUP_SCRIPT_RAN=1
 ```
 
-**Set the same email variables in Convex:**
-
-```bash
-npx convex env set RESEND_API_KEY re_your_api_key_here
-npx convex env set FROM_EMAIL noreply@yourdomain.com
-npx convex env set NEXT_PUBLIC_APP_DOMAIN http://localhost:3000
-npx convex env set SITE_URL http://localhost:3000
-```
-
-**⚠️ CRITICAL: JWT Authentication Setup**
-
-For authentication to work properly, you must also set JWT keys in your Convex environment:
-
-1. **Generate JWT keys** by running:
-   ```bash
-   node -e "
-   import('jose').then(async ({ exportJWK, exportPKCS8, generateKeyPair }) => {
-     const keys = await generateKeyPair('RS256', { extractable: true });
-     const privateKey = await exportPKCS8(keys.privateKey);
-     const publicKey = await exportJWK(keys.publicKey);
-     const jwks = JSON.stringify({ keys: [{ use: 'sig', ...publicKey }] });
-     console.log('JWT_PRIVATE_KEY=\"' + privateKey.trimEnd().replace(/\\n/g, ' ') + '\"');
-     console.log('JWKS=' + jwks);
-   });
-   "
-   ```
-
-2. **Copy the output** and set these environment variables in your **Convex dashboard** (not in .env.local):
-   - `JWT_PRIVATE_KEY` - The private key from step 1
-   - `JWKS` - The JSON Web Key Set from step 1
-
-3. **Alternative method** using the Convex CLI:
-   ```bash
-   npx convex env set JWT_PRIVATE_KEY  # Enter the private key when prompted
-   npx convex env set JWKS            # Enter the JWKS when prompted
-   ```
-
-**Note**: These JWT keys are essential for token signing and verification. Without them, authentication will fail with "Could not verify OIDC token claim" errors.
-
-**⚠️ Common JWT Key Formatting Issues:**
-
-- **PKCS#8 Format Errors**: If you get `"pkcs8" must be PKCS#8 formatted string` errors, ensure the private key uses spaces instead of `\n` escape sequences
-- **Line Break Issues**: Private keys must have line breaks replaced with single spaces (not `\n` or `\\n`)
-- **Missing Key Pairs**: Both `JWT_PRIVATE_KEY` and `JWKS` must be set - missing either will cause authentication failures
-- **Mismatched Keys**: The private key and JWKS must be from the same key pair generation - don't mix keys from different generations
-- **Environment Variable Location**: JWT keys must be set in the **Convex dashboard**, not in your local `.env.local` file
-
-**Correct JWT_PRIVATE_KEY format example:**
-```
------BEGIN PRIVATE KEY----- MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC... -----END PRIVATE KEY-----
-```
-*(Notice single spaces replacing line breaks)*
-
-### 3. Resend Email Setup
-
-1. Create a [Resend account](https://resend.com)
-2. Add and verify your domain in the Resend dashboard
-3. Create an API key with "Send emails" permission
-4. Update the `RESEND_API_KEY` in your environment variables
-
-**For development**: You can use Resend's test domain initially, but custom domains are recommended for production.
-
-### 4. Create Your First Admin User
-
-Use the interactive bootstrap script to create your first admin user:
+### 4. Create First Admin
 
 ```bash
 npm run bootstrap-admin
 ```
 
-This will:
-- Check for existing users in your database
-- Prompt you for admin user details (name and email)
-- Create a secure invite token
-- Display the invite URL for account creation
+### 5. Start Development
 
-**Important**: The bootstrap script only works when no admin users exist, ensuring security.
+```bash
+npm run dev
+```
 
-### Role-Based Access Control
+Visit `http://localhost:3000` to access the platform.
 
-#### Roles and Permissions
+## 🎮 Game Development Guide
 
-- **User Role**: Basic access to application features
-- **Admin Role**: Full access including user management and invitations
-- **Hierarchical**: Admin role includes all User permissions plus additional privileges
+### Understanding Game Types
 
-### How It Works
+#### Single-Player Games
+- **Purpose**: Individual learning experiences
+- **Features**: Personal progress tracking, timed challenges, score history
+- **Example**: Math Quiz Solo - students solve math problems at their own pace
+- **Implementation**: Immediate game start, local progress tracking
 
-#### 1. Admin Invite Flow (`/admin`)
-*Requires Admin Role*
+#### Multiplayer Games
+- **Purpose**: Competitive learning with peers
+- **Features**: Real-time leaderboards, live progress updates, host controls
+- **Example**: Math Race - students compete to solve problems fastest
+- **Implementation**: Waiting room, host-managed start, live updates
 
-- Admin visits `/admin` page (access restricted to admins)
-- Enters email address and selects role (User or Admin)
-- System creates secure token with role information
-- Sends email via Resend with invite link
+#### Custom Games
+- **Purpose**: Personalized learning experiences
+- **Features**: Configurable settings, custom question sets, flexible rules
+- **Example**: Custom Math Quiz with teacher-defined difficulty and topics
+- **Implementation**: Configuration step before game creation
 
-#### 2. User Sign-Up Flow (`/invite`)
+### 🔧 Adding a New Game
 
-- User receives email with invite link: `/invite?email=...&token=...`
-- User clicks link and creates password
-- System validates token and assigns the specified role
-- User account created with proper role assignment
+#### Step 1: Define Game Configuration
 
-#### 3. Password Reset Flow
+Add your game to the games configuration in `convex/games.ts`:
 
-- User clicks "Forgot your password?" on `/signin`
-- Enters email on `/forgot-password` page
-- If account exists, reset email sent (no email enumeration)
-- User clicks reset link: `/reset-password?email=...&token=...`
-- User creates new password (1-hour token expiry)
+```typescript
+{
+  "id": "your-new-game",
+  "name": "Your New Game",
+  "type": "single-player", // or "multiplayer"
+  "description": "Description of your educational game",
+  "showTimer": true,
+  "maxTime": 300,
+  "isCustom": false // or true for configurable games
+}
+```
 
-#### 4. Regular Sign-In (`/signin`)
+#### Step 2: Create Game Components
 
-- Existing users sign in with email/password
-- No sign-up option available on this page
-- Includes forgot password link
+Create your game directory structure:
 
-### Key Files
+```
+app/(game)/game/your-new-game/
+├── [code]/
+│   └── page.tsx          # Main game component
+└── create/               # Only for custom games
+    └── page.tsx          # Game configuration
+```
 
-#### Backend (Convex)
-- **`convex/auth.ts`**: Convex Auth configuration with Password provider
-- **`convex/authorization.ts`**: Role-based access control helpers and utilities
-- **`convex/invites.ts`**: Invite token management, email sending, and password reset
-- **`convex/users.ts`**: User management functions and queries
-- **`convex/schema.ts`**: Database schema with roles, inviteTokens, and passwordResetTokens
+#### Step 3: Implement Game Logic
 
-#### Frontend (Next.js)
-- **`app/admin/page.tsx`**: Admin interface for sending invites (admin-only access)
-- **`app/invite/page.tsx`**: User invite acceptance and password creation
-- **`app/signin/page.tsx`**: Standard sign-in with forgot password link
-- **`app/forgot-password/page.tsx`**: Password reset request page
-- **`app/reset-password/page.tsx`**: New password creation page
+**Single-Player Game Template:**
 
-#### Tools
-- **`scripts/create-user.mjs`**: CLI tool for manual user creation
-- **`scripts/create-admin-invite.mjs`**: Bootstrap script for creating the first admin user
+```typescript
+"use client";
+
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+
+export default function YourNewGamePage({ params }: { params: { code: string } }) {
+  const { code } = params;
+  const gameInstance = useQuery(api.games.getGameInstanceByCode, { code });
+  const updateProgress = useMutation(api.games.updateGameProgress);
+  const completeGame = useMutation(api.games.completeGame);
+
+  const [score, setScore] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
+
+  // Your game logic here...
+
+  const handleAnswer = (answer: string) => {
+    // Process answer, update score, progress to next question
+    // Update live progress for multiplayer games
+    if (gameInstance?.type === "multiplayer") {
+      updateProgress({
+        gameCode: code,
+        questionsAnswered: currentQuestion + 1,
+        totalQuestions: totalQuestions,
+        score: newScore
+      });
+    }
+  };
+
+  const handleGameComplete = () => {
+    completeGame({
+      gameCode: code,
+      finalScore: score,
+      totalQuestions: totalQuestions,
+      completedAt: Date.now()
+    });
+  };
+
+  // Render your game UI...
+}
+```
+
+**Multiplayer Game Additional Features:**
+
+```typescript
+// Add these for multiplayer games
+const gameProgress = useQuery(api.games.getGameProgress, { gameCode: code });
+const participants = useQuery(api.games.getGameParticipants, { code });
+const startGame = useMutation(api.games.startMultiplayerGame);
+
+// Include live leaderboard
+import LiveLeaderboard from "../../_components/LiveLeaderboard";
+
+// In your render:
+<LiveLeaderboard gameCode={code} />
+```
+
+#### Step 4: Custom Game Configuration (Optional)
+
+For configurable games, create a setup page:
+
+```typescript
+// app/(game)/game/your-new-game/create/page.tsx
+export default function CreateYourNewGame() {
+  const [config, setConfig] = useState({
+    difficulty: "medium",
+    topics: ["addition", "subtraction"],
+    questionCount: 10
+  });
+
+  const handleCreate = () => {
+    // Create game instance with custom config
+    createGameInstance({
+      gameId: "your-new-game",
+      customConfig: config
+    });
+  };
+
+  // Render configuration form...
+}
+```
+
+#### Step 5: Game-Specific Convex Functions (If Needed)
+
+Add specialized backend functions in `convex/games.ts`:
+
+```typescript
+// Example: Get custom questions based on game config
+export const getCustomQuestions = query({
+  args: { gameCode: v.string() },
+  handler: async (ctx, { gameCode }) => {
+    const instance = await ctx.db
+      .query("gameInstances")
+      .withIndex("by_code", (q) => q.eq("code", gameCode))
+      .first();
+
+    // Generate questions based on instance.customConfig
+    return generateQuestions(instance?.customConfig);
+  },
+});
+```
+
+### 🎯 Game Development Best Practices
+
+#### Performance
+- **State Management**: Use React state for UI, Convex for persistence
+- **Real-time Updates**: Debounce progress updates (every 2-3 seconds)
+- **Loading States**: Always show loading indicators for async operations
+
+#### User Experience
+- **Mobile First**: Design for mobile devices primarily
+- **Accessibility**: Include proper ARIA labels and keyboard navigation
+- **Error Handling**: Graceful handling of network issues and edge cases
+- **Progress Feedback**: Clear indicators of game progress and scoring
+
+#### Data Management
+- **Progress Tracking**: Update progress incrementally, not just at the end
+- **Score Calculation**: Consistent scoring across similar game types
+- **Time Management**: Handle timer edge cases and browser tab switching
+- **Persistence**: Save game state to handle browser refreshes
+
+### 🔧 Game Integration Checklist
+
+When adding a new game, ensure you:
+
+- [ ] Add game configuration to the games list
+- [ ] Create game page component with proper routing
+- [ ] Implement progress tracking with `updateGameProgress`
+- [ ] Handle game completion with `completeGame`
+- [ ] Add multiplayer support if applicable (leaderboard, live updates)
+- [ ] Create custom configuration page for configurable games
+- [ ] Test single-player and multiplayer modes
+- [ ] Verify progress appears in analytics and history
+- [ ] Test mobile responsiveness
+- [ ] Add proper error handling and loading states
+
+## 📱 Platform Architecture
+
+### Frontend Structure
+```
+app/
+├── (auth)/                 # Authentication pages
+│   ├── signin/
+│   ├── forgot-password/
+│   └── reset-password/
+├── (game)/                 # Game-related pages
+│   ├── _components/        # Shared game components
+│   │   ├── LiveLeaderboard.tsx
+│   │   └── GameHeader.tsx
+│   ├── game/              # Individual games
+│   │   ├── single-player-math/
+│   │   ├── multi-player-math/
+│   │   └── custom-math-quiz/
+│   └── room/              # Game waiting rooms
+├── (management)/          # Platform management
+│   ├── dashboard/         # Main dashboard
+│   ├── progress/          # Personal progress tracking
+│   ├── history/           # Game history
+│   ├── analytics/         # Teacher/admin analytics
+│   ├── admin/             # Admin panel
+│   ├── invite/            # User invitations
+│   └── profile/           # User profiles
+└── api/                   # API routes
+    └── health/            # Health check for Docker
+```
+
+### Backend Structure (Convex)
+```
+convex/
+├── schema.ts              # Database schema
+├── auth.ts                # Authentication setup
+├── authorization.ts       # Role-based access control
+├── users.ts               # User management
+├── invites.ts             # Email invitations
+├── games.ts               # Game logic and data
+└── _generated/            # Auto-generated files
+```
 
 ### Database Schema
 
-```typescript
-// Users table with role-based access control
-users: defineTable({
-  name: v.optional(v.string()),
-  image: v.optional(v.string()),
-  email: v.optional(v.string()),
-  emailVerificationTime: v.optional(v.number()),
-  phone: v.optional(v.string()),
-  phoneVerificationTime: v.optional(v.number()),
-  isAnonymous: v.optional(v.boolean()),
-  role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
-}).index("email", ["email"]),
+#### Core Tables
+- **users**: User profiles with role-based access control
+- **gameInstances**: Game sessions and configurations
+- **gameProgress**: Real-time game progress and scores
+- **inviteTokens**: Email invitation management
+- **passwordResetTokens**: Secure password reset system
 
-// Invite tokens with role assignment
-inviteTokens: defineTable({
-  email: v.string(),
-  token: v.string(),
-  expiresAt: v.number(),
-  createdBy: v.string(),
-  used: v.boolean(),
-  role: v.union(v.literal("admin"), v.literal("user")),
-}).index("by_email_token", ["email", "token"]),
+## 📊 Analytics & Reporting
 
-// Password reset tokens
-passwordResetTokens: defineTable({
-  email: v.string(),
-  token: v.string(),
-  expiresAt: v.number(),
-  used: v.boolean(),
-}).index("by_email_token", ["email", "token"]),
-```
+### Student Analytics
+- **Personal Progress**: Games played, average scores, improvement trends
+- **Achievement System**: Unlockable badges for milestones
+- **Learning Insights**: Strengths, weaknesses, and recommendations
+- **Time Tracking**: Study time and engagement patterns
 
-### Security Features
+### Teacher Analytics
+- **Class Overview**: Student engagement and performance metrics
+- **Game Analytics**: Most popular games and difficulty analysis
+- **Progress Tracking**: Individual and class-wide improvement
+- **Activity Reports**: Daily, weekly, and monthly engagement data
 
-#### Authentication & Authorization
-- **Role-based access control**: Hierarchical permission system
-- **Server-side authorization**: All permissions validated in Convex backend
-- **Admin-only operations**: Invite creation restricted to admin users
-- **Protected routes**: Admin pages inaccessible to regular users
+### Admin Analytics
+- **Platform Usage**: User activity and growth metrics
+- **Content Analytics**: Game popularity and effectiveness
+- **System Health**: Performance monitoring and error tracking
+- **User Management**: Registration trends and role distribution
 
-#### Token Security
-- **Invite tokens**: 7-day expiration, one-time use
-- **Password reset tokens**: 1-hour expiration for security
-- **Secure generation**: Uses `crypto.randomUUID()` for all tokens
-- **Token cleanup**: Removes old unused tokens automatically
+## 🔒 Security Features
 
-#### Privacy & Security
-- **No email enumeration**: Password reset doesn't reveal if account exists
-- **Secure validation**: Server-side validation of all tokens
-- **Auto-cleanup**: Expired tokens handled automatically
+### Authentication & Authorization
+- **Email-Only Registration**: Invite-based user onboarding
+- **JWT Token Security**: Secure session management
+- **Role-Based Permissions**: Hierarchical access control
+- **Password Security**: Bcrypt hashing with secure reset flow
 
-### Production Deployment
+### Data Protection
+- **Input Validation**: Comprehensive server-side validation
+- **SQL Injection Prevention**: Convex's built-in protection
+- **XSS Protection**: React's built-in sanitization
+- **CSRF Protection**: Token-based request verification
 
-When deploying to production:
+### Privacy Compliance
+- **Data Minimization**: Only collect necessary user data
+- **Secure Storage**: Encrypted data storage in Convex
+- **Audit Logging**: Track admin actions and user activities
+- **Data Export**: User data portability features
 
-1. Update `NEXT_PUBLIC_APP_DOMAIN` to your production domain
-2. Ensure Resend domain is verified for production
-3. Set production environment variables in Convex dashboard
+## 🚀 Deployment
 
-## CLI Tools
+### Docker Deployment
 
-### Bootstrap Admin Creation
-
-Create your first admin user when starting a new project:
+The platform includes Docker support for easy deployment:
 
 ```bash
-npm run bootstrap-admin
+# Build Docker image
+docker build -t educational-game-platform .
+
+# Run with environment variables
+docker run -p 3000:3000 --env-file .env educational-game-platform
 ```
 
-**Interactive prompts**:
-- Full name for the admin user
-- Email address
-- Confirmation to create the invite
+### Dockploy Deployment
 
-**Features**:
-- Only works when no admin users exist (security measure)
-- Checks for existing users and prevents conflicts
-- Creates secure invite tokens with 7-day expiration
-- Displays invite URL for immediate account creation
+1. **Repository Setup**: Push code to GitHub/GitLab
+2. **Environment Configuration**: Set all required environment variables
+3. **Domain Configuration**: Point your domain to Dockploy
+4. **Deploy**: Use Dockploy's one-click deployment
 
-### Manual User Creation
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
 
-Create user profiles directly via CLI:
+### Production Environment Variables
 
 ```bash
-npm run create-user
+# Production Convex
+CONVEX_DEPLOYMENT=prod:your-production-deployment
+NEXT_PUBLIC_CONVEX_URL=https://your-prod-deployment.convex.cloud
+
+# Production Email
+RESEND_API_KEY=re_production_api_key
+FROM_EMAIL=noreply@yourdomain.com
+
+# Production Domain
+NEXT_PUBLIC_APP_DOMAIN=https://yourdomain.com
+SITE_URL=https://yourdomain.com
+
+# Production JWT Keys (Generate new ones!)
+JWT_PRIVATE_KEY="production_private_key"
+JWKS={"keys":[...]}
 ```
 
-**Interactive prompts**:
-- Email address
-- Name (optional, defaults to email prefix)
-- Role (User or Admin)
-- Password (for reference, but not used for authentication)
+## 🤝 Contributing
 
-**Important**: This tool only creates user profiles, not authentication credentials. Users created this way must use the "Forgot Password" flow to set up their login credentials.
+### Development Setup
 
-**Recommended**: Use the admin panel `/admin` to send proper invites instead, as it creates proper authentication credentials.
+1. **Fork the repository**
+2. **Clone your fork**: `git clone https://github.com/your-username/educational-game-platform`
+3. **Install dependencies**: `npm install`
+4. **Set up Convex**: `npx convex dev`
+5. **Configure environment**: Copy `.env.example` to `.env.local`
+6. **Start development**: `npm run dev`
 
-### API Reference
+### Game Contribution Guidelines
 
-#### Authorization Helpers
+When contributing new games:
+
+1. **Follow naming conventions**: Use kebab-case for game IDs
+2. **Implement both modes**: Single-player and multiplayer when applicable
+3. **Add comprehensive tests**: Test game logic and edge cases
+4. **Document game rules**: Clear instructions for players
+5. **Ensure accessibility**: Support keyboard navigation and screen readers
+6. **Mobile optimization**: Test on various screen sizes
+
+### Code Standards
+
+- **TypeScript**: All code must be typed
+- **ESLint**: Follow the configured linting rules
+- **Prettier**: Use consistent code formatting
+- **Comments**: Document complex game logic
+- **Testing**: Add tests for new functionality
+
+### Pull Request Process
+
+1. **Create feature branch**: `git checkout -b feature/new-game-type`
+2. **Implement changes**: Follow game development guide
+3. **Test thoroughly**: Both single-player and multiplayer modes
+4. **Update documentation**: Add game to README and guides
+5. **Submit PR**: Include description, screenshots, and testing notes
+
+## 📚 API Reference
+
+### Game Management
 
 ```typescript
-import { requireAdmin, hasRole, VALID_ROLES } from "./authorization";
+// Create new game instance
+await createGameInstance({
+  gameId: "game-type",
+  customConfig?: any
+});
 
-// Require admin role
-await requireAdmin(ctx);
+// Join multiplayer game
+await joinGame({ code: "ABC123" });
 
-// Check if user has specific role
-const isAdmin = await hasRole(ctx, VALID_ROLES.ADMIN);
+// Update game progress
+await updateGameProgress({
+  gameCode: "ABC123",
+  questionsAnswered: 5,
+  totalQuestions: 10,
+  score: 80
+});
 
-// Get current user with role info
-const user = await getAuthenticatedUser(ctx);
+// Complete game
+await completeGame({
+  gameCode: "ABC123",
+  finalScore: 85,
+  totalQuestions: 10,
+  completedAt: Date.now()
+});
 ```
 
-### Customization
-
-#### Email Templates
-
-Edit email templates in `convex/invites.ts`:
-- `sendInviteEmail` action for invitation emails
-- `sendPasswordResetEmail` action for password reset emails
-
-#### Token Expiration
-
-Modify token expiration periods:
+### Analytics Queries
 
 ```typescript
-// Invite tokens (7 days)
-const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+// Get user progress stats
+const stats = await getUserProgressStats();
 
-// Password reset tokens (1 hour)
-const expiresAt = Date.now() + 60 * 60 * 1000;
+// Get user game history
+const history = await getUserGameHistory();
+
+// Get analytics data (teachers/admins only)
+const analytics = await getAnalyticsData();
 ```
 
-#### Role System
-
-Extend roles in `convex/authorization.ts`:
+### User Management
 
 ```typescript
-export const VALID_ROLES = {
-  USER: "user" as const,
-  ADMIN: "admin" as const,
-  // Add new roles here
-} as const;
+// Get current user
+const user = await getCurrentUser();
 
-const roleHierarchy = {
-  [VALID_ROLES.USER]: 0,
-  [VALID_ROLES.ADMIN]: 1,
-  // Update hierarchy
+// Send user invite (admin only)
+await sendInvite({
+  email: "user@example.com",
+  role: "student"
+});
+```
+
+## 🏆 Achievements System
+
+The platform includes a comprehensive achievements system:
+
+### Student Achievements
+- **First Game**: Complete your first game
+- **Regular Player**: Complete 5 games
+- **Dedicated Learner**: Complete 10 games
+- **High Scorer**: Maintain 80%+ average score
+- **Active Learner**: Play 3+ games per week
+
+### Game-Specific Achievements
+- **Perfect Score**: Score 100% on any game
+- **Speed Runner**: Complete game under time limit
+- **Consistency King**: 5 games in a row above 90%
+- **Multiplayer Champion**: Win 10 multiplayer games
+
+### Custom Achievements
+Teachers can create custom achievements based on:
+- Specific game completion
+- Subject mastery
+- Participation goals
+- Time-based challenges
+
+## 🔧 Advanced Configuration
+
+### Custom Game Templates
+
+Create reusable game templates:
+
+```typescript
+// Define template in convex/gameTemplates.ts
+export const mathQuizTemplate = {
+  defaultConfig: {
+    questionCount: 10,
+    timeLimit: 300,
+    difficulty: "medium"
+  },
+  configSchema: {
+    questionCount: { min: 5, max: 50 },
+    timeLimit: { min: 60, max: 1800 },
+    difficulty: ["easy", "medium", "hard"]
+  }
 };
 ```
 
-## Available Scripts
+### Custom Scoring Systems
 
-- **`npm run dev`**: Start development servers for both frontend and backend
-- **`npm run dev:frontend`**: Start only the Next.js development server
-- **`npm run dev:backend`**: Start only the Convex development server
-- **`npm run build`**: Build the application for production
-- **`npm run lint`**: Run ESLint for code quality checks
-- **`npm run bootstrap-admin`**: Create the first admin user (interactive)
-- **`npm run create-user`**: Create a user profile manually (interactive)
+Implement custom scoring logic:
 
-## Project Structure
-
-```
-convex-auth-practice/
-├── app/                    # Next.js App Router pages
-│   ├── admin/             # Admin-only interface
-│   ├── invite/            # User invite acceptance
-│   ├── signin/            # User authentication
-│   ├── forgot-password/   # Password reset request
-│   └── reset-password/    # New password creation
-├── convex/                # Convex backend functions
-│   ├── auth.ts           # Authentication configuration
-│   ├── authorization.ts  # Role-based access control
-│   ├── invites.ts        # Invite and email management
-│   ├── users.ts          # User management functions
-│   └── schema.ts         # Database schema definition
-├── scripts/              # CLI utilities
-│   ├── create-admin-invite.mjs  # Bootstrap admin creation
-│   └── create-user.mjs          # Manual user creation
-└── package.json         # Project dependencies and scripts
+```typescript
+// Example: Time-based scoring
+const calculateScore = (correctAnswers: number, totalQuestions: number, timeSpent: number) => {
+  const accuracy = correctAnswers / totalQuestions;
+  const timeBonus = Math.max(0, (300 - timeSpent) / 300); // 5-minute game
+  return Math.round((accuracy * 70) + (timeBonus * 30)); // 70% accuracy, 30% speed
+};
 ```
 
-## Troubleshooting
+### Integration with Learning Management Systems
 
-### Common Issues
+Connect with external LMS platforms:
 
-1. **"Could not find public function"** error:
-   ```bash
-   npx convex dev --once
-   ```
+```typescript
+// Example: Canvas integration
+export const syncToCanvas = async (userId: string, gameResults: GameResult[]) => {
+  // Sync game scores to Canvas gradebook
+  // Implementation depends on LMS API
+};
+```
 
-2. **Bootstrap script fails with existing admin**:
-   - The script prevents creating multiple admins for security
-   - Delete existing admin users first, or use the regular invite flow
+## 📞 Support & Community
 
-3. **Email not sending**:
-   - Verify Resend API key is correct
-   - Check that your domain is verified in Resend
-   - Ensure `FROM_EMAIL` uses your verified domain
+### Getting Help
 
-4. **Environment variables not loading**:
-   - Restart your development server after adding `.env.local`
-   - Verify Convex environment variables are set: `npx convex env list`
+- **Documentation**: Check this README and inline code comments
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/your-repo/issues)
+- **Discussions**: Join discussions in [GitHub Discussions](https://github.com/your-repo/discussions)
+- **Email**: Contact maintainers at support@yourdomain.com
 
-## Extending the System
+### Community Resources
 
-### Adding New Roles
+- **Discord Server**: Join our developer community
+- **Weekly Office Hours**: Live Q&A sessions for developers
+- **Game Development Workshops**: Learn to create educational games
+- **Teacher Training**: Workshops for educators using the platform
 
-1. Update `VALID_ROLES` in `convex/authorization.ts`
-2. Add role to the hierarchy in `roleHierarchy`
-3. Update database schema in `convex/schema.ts`
-4. Add role options to admin interface and CLI tools
+### Contributing Back
 
-### Custom Email Templates
+We encourage contributions:
+- **New Games**: Share your educational game creations
+- **Bug Fixes**: Help improve platform stability
+- **Documentation**: Improve guides and examples
+- **Translations**: Help make the platform multilingual
 
-Edit email templates in `convex/invites.ts`:
-- `sendInviteEmail`: Customize invitation emails
-- `sendPasswordResetEmail`: Customize password reset emails
+## 📄 License
 
-### Additional Authentication Providers
+This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.
 
-To add other authentication methods (Google, GitHub, etc.), see the [Convex Auth Configuration docs](https://labs.convex.dev/auth/config).
+## 🙏 Acknowledgments
 
-## Learn More
+Built with amazing open-source technologies:
 
-- [Convex Documentation](https://docs.convex.dev/) - Learn about Convex features
-- [Convex Auth Guide](https://labs.convex.dev/auth) - Authentication system documentation
-- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features
-- [Resend Documentation](https://resend.com/docs) - Email API documentation
+- **[Convex](https://convex.dev)** - Real-time backend platform
+- **[Next.js](https://nextjs.org)** - React framework
+- **[Tailwind CSS](https://tailwindcss.com)** - CSS framework
+- **[Shadcn/ui](https://ui.shadcn.com)** - UI components
+- **[Recharts](https://recharts.org)** - Charting library
+- **[Resend](https://resend.com)** - Email delivery
+- **[Lucide React](https://lucide.dev)** - Icon library
 
-## Community
+---
 
-Join the Convex community:
+**Happy Learning! 🎓✨**
 
-- [Convex Discord](https://convex.dev/community) - Get help and discuss with other developers
-- [Convex GitHub](https://github.com/get-convex/) - Star and contribute to open-source projects
+Transform education through interactive, engaging games that make learning fun and trackable.

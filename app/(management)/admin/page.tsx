@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -71,7 +72,7 @@ export default function AdminPage() {
     setMessage(null);
 
     try {
-      await updateUserRole({ userId: userId as any, role: newRole });
+      await updateUserRole({ userId: userId as Id<"users">, role: newRole });
       setMessage({ type: "success", text: `User role updated to ${newRole}` });
       setEditingUser(null);
     } catch (error: unknown) {
@@ -90,7 +91,7 @@ export default function AdminPage() {
     setMessage(null);
 
     try {
-      await deleteUser({ userId: userId as any });
+      await deleteUser({ userId: userId as Id<"users"> });
       setMessage({ type: "success", text: `User ${userEmail} deleted successfully` });
     } catch (error: unknown) {
       setMessage({ type: "error", text: (error as Error)?.message || "Failed to delete user" });
@@ -172,7 +173,7 @@ export default function AdminPage() {
                       {editingUser?.id === user._id ? (
                         <Select
                           value={editingUser.role}
-                          onValueChange={(value) => setEditingUser({ ...editingUser, role: value as any })}
+                          onValueChange={(value) => setEditingUser({ ...editingUser, role: value as "admin" | "teacher" | "student" })}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />

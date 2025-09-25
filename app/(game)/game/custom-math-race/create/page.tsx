@@ -7,10 +7,9 @@ import { api } from "../../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Loader } from "@/components/ui/loader";
-import { Settings, Clock, Hash, Users } from "lucide-react";
+import { Settings, Clock, Hash } from "lucide-react";
 import Link from "next/link";
 
 export default function CustomMathRaceCreate() {

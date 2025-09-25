@@ -33,8 +33,8 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
   // Check if current user has joined
   const currentUserHasJoined = gameParticipants?.allParticipants?.some(
     participant =>
-      (participant.type === 'authenticated' && participant.id === currentUser?._id) ||
-      (participant.type === 'guest' && participant.name === guestName && hasJoined)
+      (participant?.type === 'authenticated' && participant?.id === currentUser?._id) ||
+      (participant?.type === 'guest' && participant?.name === guestName && hasJoined)
   );
 
   const isHost = currentUser && gameInstance && currentUser._id === gameInstance.createdBy;
@@ -45,7 +45,7 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
       // Play synthetic bell sound
       try {
         const playBell = () => {
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
 
           // Create a simple bell-like sound
           const oscillator = audioContext.createOscillator();
@@ -141,9 +141,9 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
     try {
       await joinGameAsGuest({ code: gameCode, guestName: guestName.trim() });
       setHasJoined(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to join game as guest:", error);
-      alert(error.data || "Failed to join game. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to join game. Please try again.");
     } finally {
       setIsJoining(false);
     }
@@ -211,26 +211,26 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
                 {gameParticipants.allParticipants.length > 0 ? (
                   gameParticipants.allParticipants.map((participant) => (
                     <div
-                      key={participant.id}
+                      key={participant?.id}
                       className="flex items-center justify-between p-3 rounded-lg border bg-card"
                     >
                       <div className="flex items-center gap-2">
-                        {participant.type === 'authenticated' ? (
+                        {participant?.type === 'authenticated' ? (
                           <UserCircle className="h-5 w-5" />
                         ) : (
                           <UserCircle className="h-5 w-5 text-muted-foreground" />
                         )}
-                        <span className="font-medium">{participant.name}</span>
+                        <span className="font-medium">{participant?.name}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {participant.isHost && (
+                        {participant?.isHost && (
                           <Badge variant="destructive" className="flex items-center gap-1">
                             <Crown className="h-3 w-3" />
                             Host
                           </Badge>
                         )}
-                        <Badge variant={participant.type === 'authenticated' ? 'default' : 'secondary'}>
-                          {participant.type === 'authenticated' ? 'User' : 'Guest'}
+                        <Badge variant={participant?.type === 'authenticated' ? 'default' : 'secondary'}>
+                          {participant?.type === 'authenticated' ? 'User' : 'Guest'}
                         </Badge>
                       </div>
                     </div>

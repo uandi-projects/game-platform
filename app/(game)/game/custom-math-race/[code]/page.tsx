@@ -115,7 +115,7 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
         setGameStarted(true);
       }
     }
-  }, [gameProgress, currentUser, questions.length, guestName]);
+  }, [gameProgress, currentUser, questions.length, guestName, gameStarted]);
 
   // Update progress in database (only when answers change, not on restoration)
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
         }).catch(console.error);
       }
     }
-  }, [userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress]);
+  }, [userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, currentQuestionIndex]);
 
   const calculateFinalScore = useCallback(async (answers: number[]) => {
     let correctAnswers = 0;
