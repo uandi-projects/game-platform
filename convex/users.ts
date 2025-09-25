@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAdmin, getAuthenticatedUser } from "./authorization";
 
 // Get current authenticated user
 export const getCurrentUser = query({
@@ -17,12 +18,70 @@ export const getCurrentUser = query({
   },
 });
 
-// Get all users (for admin/debugging purposes)
+// Get all users (admin only)
 export const getAllUsers = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const users = await ctx.db.query("users").collect();
-    return users;
+    return users.map(user => ({
+      ...user,
+      // Don't expose sensitive auth data
+      emailVerificationTime: user.emailVerificationTime,
+      phoneVerificationTime: user.phoneVerificationTime,
+    }));
+  },
+});
+
+// Update user role (admin only)
+export const updateUserRole = mutation({
+  args: {
+    userId: v.id("users"),
+    role: v.union(v.literal("admin"), v.literal("teacher"), v.literal("student")),
+  },
+  handler: async (ctx, { userId, role }) => {
+    await requireAdmin(ctx);
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new ConvexError("User not found");
+    }
+
+    await ctx.db.patch(userId, { role });
+    return { success: true, userId, newRole: role };
+  },
+});
+
+// Delete user (admin only)
+export const deleteUser = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { userId }) => {
+    const { requireAdmin } = await import("./authorization");
+    await requireAdmin(ctx);
+
+    // Get current user to prevent self-deletion
+    const { getAuthenticatedUser } = await import("./authorization");
+    const currentUser = await getAuthenticatedUser(ctx);
+
+    if (currentUser._id === userId) {
+      throw new ConvexError("Cannot delete your own account");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new ConvexError("User not found");
+    }
+
+    // TODO: In a production app, you might want to:
+    // 1. Clean up related data (invites, etc.)
+    // 2. Soft delete instead of hard delete
+    // 3. Log the deletion for audit purposes
+
+    await ctx.db.delete(userId);
+    return { success: true, userId };
   },
 });
 
