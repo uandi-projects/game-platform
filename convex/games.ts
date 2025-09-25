@@ -603,3 +603,212 @@ export const completeGame = mutation({
     return { success: true };
   },
 });
+
+// Get user's game history
+export const getUserGameHistory = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    // Get all game progress for this user
+    const gameProgress = await ctx.db
+      .query("gameProgress")
+      .filter((q) => q.eq(q.field("participantId"), user._id))
+      .collect();
+
+    // Get game instances for context
+    const gameInstances = await Promise.all(
+      gameProgress.map(async (progress) => {
+        const instance = await ctx.db
+          .query("gameInstances")
+          .withIndex("by_code", (q) => q.eq("code", progress.gameCode))
+          .first();
+        return { progress, instance };
+      })
+    );
+
+    // Sort by last updated (most recent first)
+    return gameInstances
+      .filter(({ instance }) => instance !== null)
+      .sort((a, b) => b.progress.lastUpdated - a.progress.lastUpdated)
+      .map(({ progress, instance }) => ({
+        gameCode: progress.gameCode,
+        gameId: instance?.gameId,
+        score: progress.score,
+        questionsAnswered: progress.questionsAnswered,
+        totalQuestions: progress.totalQuestions,
+        completedAt: progress.lastUpdated,
+        isCompleted: !progress.isActive,
+        gameType: instance?.type,
+        createdAt: instance?.createdAt,
+      }));
+  },
+});
+
+// Get user's learning progress stats
+export const getUserProgressStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    // Get all game progress for this user
+    const gameProgress = await ctx.db
+      .query("gameProgress")
+      .filter((q) => q.eq(q.field("participantId"), user._id))
+      .collect();
+
+    const completed = gameProgress.filter(g => !g.isActive);
+    const totalGames = completed.length;
+    const totalScore = completed.reduce((sum, g) => sum + g.score, 0);
+    const totalQuestions = completed.reduce((sum, g) => sum + g.questionsAnswered, 0);
+    const averageScore = totalGames > 0 ? Math.round(totalScore / totalGames) : 0;
+    const accuracyRate = completed.length > 0 ?
+      Math.round((completed.reduce((sum, g) => sum + (g.questionsAnswered > 0 ? g.score / g.questionsAnswered : 0), 0) / completed.length) * 100) : 0;
+
+    // Calculate recent performance (last 7 days)
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const recentGames = completed.filter(g => g.lastUpdated > sevenDaysAgo);
+
+    // Get daily stats for chart
+    const dailyStats = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = Date.now() - (i * 24 * 60 * 60 * 1000);
+      const dayEnd = dayStart + (24 * 60 * 60 * 1000);
+      const dayGames = completed.filter(g => g.lastUpdated >= dayStart && g.lastUpdated < dayEnd);
+      const dayScore = dayGames.reduce((sum, g) => sum + g.score, 0);
+
+      dailyStats.push({
+        date: new Date(dayStart).toISOString().split('T')[0],
+        games: dayGames.length,
+        score: dayScore,
+        averageScore: dayGames.length > 0 ? Math.round(dayScore / dayGames.length) : 0
+      });
+    }
+
+    return {
+      totalGames,
+      averageScore,
+      totalQuestions,
+      accuracyRate,
+      recentGames: recentGames.length,
+      dailyStats,
+      achievements: [
+        totalGames >= 1 && { id: 'first_game', name: 'First Game', description: 'Completed your first game', earned: true },
+        totalGames >= 5 && { id: 'regular_player', name: 'Regular Player', description: 'Completed 5 games', earned: true },
+        totalGames >= 10 && { id: 'dedicated_learner', name: 'Dedicated Learner', description: 'Completed 10 games', earned: true },
+        averageScore >= 80 && { id: 'high_scorer', name: 'High Scorer', description: 'Average score above 80%', earned: true },
+        recentGames.length >= 3 && { id: 'active_learner', name: 'Active Learner', description: 'Played 3 games this week', earned: true },
+      ].filter(Boolean)
+    };
+  },
+});
+
+// Get analytics data for teachers/admins
+export const getAnalyticsData = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    // Only allow teachers and admins
+    if (user.role !== 'teacher' && user.role !== 'admin') {
+      throw new ConvexError('Access denied. Teachers and admins only.');
+    }
+
+    // Get all game instances and progress
+    const allGameInstances = await ctx.db.query("gameInstances").collect();
+    const allGameProgress = await ctx.db.query("gameProgress").collect();
+    const allUsers = await ctx.db.query("users").collect();
+
+    // Calculate key metrics
+    const totalGames = allGameInstances.length;
+    const totalPlayers = allUsers.filter(u => u.role === 'student').length;
+    const completedGames = allGameProgress.filter(p => !p.isActive).length;
+    const averageScore = completedGames > 0 ?
+      Math.round(allGameProgress.filter(p => !p.isActive).reduce((sum, p) => sum + p.score, 0) / completedGames) : 0;
+
+    // Game type distribution
+    const gameTypeStats = allGameInstances.reduce((acc, game) => {
+      acc[game.type] = (acc[game.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Daily activity for last 7 days
+    const dailyActivity = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = Date.now() - (i * 24 * 60 * 60 * 1000);
+      const dayEnd = dayStart + (24 * 60 * 60 * 1000);
+      const dayGames = allGameInstances.filter(g => g.createdAt >= dayStart && g.createdAt < dayEnd);
+      const dayProgress = allGameProgress.filter(p => p.lastUpdated >= dayStart && p.lastUpdated < dayEnd);
+
+      dailyActivity.push({
+        date: new Date(dayStart).toISOString().split('T')[0],
+        games: dayGames.length,
+        activeUsers: new Set(dayProgress.filter(p => p.participantType === 'authenticated').map(p => p.participantId)).size,
+        averageScore: dayProgress.length > 0 ? Math.round(dayProgress.reduce((sum, p) => sum + p.score, 0) / dayProgress.length) : 0
+      });
+    }
+
+    // Top performing students
+    const studentStats = allGameProgress
+      .filter(p => p.participantType === 'authenticated' && !p.isActive)
+      .reduce((acc, progress) => {
+        if (!acc[progress.participantId]) {
+          acc[progress.participantId] = {
+            participantId: progress.participantId,
+            participantName: progress.participantName,
+            totalGames: 0,
+            totalScore: 0,
+            totalQuestions: 0
+          };
+        }
+        acc[progress.participantId].totalGames++;
+        acc[progress.participantId].totalScore += progress.score;
+        acc[progress.participantId].totalQuestions += progress.questionsAnswered;
+        return acc;
+      }, {} as Record<string, any>);
+
+    const topStudents = Object.values(studentStats)
+      .map((student: any) => ({
+        ...student,
+        averageScore: student.totalGames > 0 ? Math.round(student.totalScore / student.totalGames) : 0,
+        accuracy: student.totalQuestions > 0 ? Math.round((student.totalScore / student.totalQuestions) * 100) : 0
+      }))
+      .sort((a, b) => b.averageScore - a.averageScore)
+      .slice(0, 10);
+
+    return {
+      overview: {
+        totalGames,
+        totalPlayers,
+        completedGames,
+        averageScore
+      },
+      gameTypeStats,
+      dailyActivity,
+      topStudents
+    };
+  },
+});
+
+// Get current user's personal game progress (for leaderboards)
+export const getCurrentUserProgress = query({
+  args: {
+    gameCode: v.string(),
+  },
+  handler: async (ctx, { gameCode }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const progress = await ctx.db
+      .query("gameProgress")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("gameCode"), gameCode),
+          q.eq(q.field("participantId"), userId)
+        )
+      )
+      .first();
+
+    return progress;
+  },
+});

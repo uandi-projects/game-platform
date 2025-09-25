@@ -23,6 +23,7 @@ import {
 export default function DashboardPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
   const availableGames = useQuery(api.games.getAvailableGames);
+  const recentActivity = useQuery(api.games.getUserGameHistory);
   const createGameInstance = useMutation(api.games.createGameInstance);
   const router = useRouter();
   const [isCreatingGame, setIsCreatingGame] = useState<string | null>(null);
@@ -247,13 +248,69 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                  <div className="text-center">
-                    <Calendar className="h-8 w-8 mx-auto mb-2" />
-                    <p>No recent activity to display</p>
-                    <p className="text-sm">Your game activity will appear here</p>
+                {recentActivity && recentActivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentActivity.slice(0, 5).map((activity, index) => {
+                      const formatGameName = (gameId: string | undefined) => {
+                        const gameNames: Record<string, string> = {
+                          'single-player-math': 'Math Quiz Solo',
+                          'multi-player-math': 'Math Race',
+                          'custom-math-quiz': 'Custom Math Quiz',
+                          'custom-math-race': 'Custom Math Race'
+                        };
+                        return gameNames[gameId || ''] || 'Unknown Game';
+                      };
+
+                      const formatDate = (timestamp: number) => {
+                        return new Date(timestamp).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                      };
+
+                      return (
+                        <div key={`${activity.gameCode}-${index}`} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-primary/10">
+                              <Trophy className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{formatGameName(activity.gameId)}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Score: {activity.score} ({activity.questionsAnswered}/{activity.totalQuestions})
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant={activity.isCompleted ? "default" : "secondary"}>
+                              {activity.isCompleted ? "Completed" : "In Progress"}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatDate(activity.completedAt)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {recentActivity.length > 5 && (
+                      <div className="text-center pt-4">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href="/history">View All History</Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center h-32 text-muted-foreground">
+                    <div className="text-center">
+                      <Calendar className="h-8 w-8 mx-auto mb-2" />
+                      <p>No recent activity to display</p>
+                      <p className="text-sm">Your game activity will appear here</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -4,11 +4,14 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import Header from "@/components/Header";
+import { Trophy, Calendar, ArrowRight } from "lucide-react";
 
 export default function Home() {
   const { isAuthenticated } = useConvexAuth();
@@ -28,6 +31,7 @@ export default function Home() {
 function Content() {
   const { isAuthenticated } = useConvexAuth();
   const currentUser = useQuery(api.users.getCurrentUser);
+  const recentActivity = useQuery(api.games.getUserGameHistory);
   const router = useRouter();
 
   // Show loading state
@@ -54,15 +58,131 @@ function Content() {
           </p>
         </div>
 
-        {/* Game Code Entry Section */}
-        <Card className="mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Game Code Entry Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">Join a Game</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-w-md mx-auto">
+                <GameCodeEntry />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button className="w-full" asChild>
+                  <Link href="/dashboard">Go to Dashboard</Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/progress">View My Progress</Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/history">Game History</Link>
+                </Button>
+                {(currentUser.role === "teacher" || currentUser.role === "admin") && (
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/analytics">Analytics</Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity Section */}
+        <Card>
           <CardHeader>
-            <CardTitle className="text-2xl text-center">Join a Game</CardTitle>
+            <CardTitle className="text-2xl flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Calendar className="h-6 w-6" />
+                Recent Activity
+              </span>
+              {recentActivity && recentActivity.length > 0 && (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/history" className="flex items-center gap-1">
+                    View All <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="max-w-md mx-auto">
-              <GameCodeEntry />
-            </div>
+            {recentActivity && recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.slice(0, 3).map((activity, index) => {
+                  const formatGameName = (gameId: string | undefined) => {
+                    const gameNames: Record<string, string> = {
+                      'single-player-math': 'Math Quiz Solo',
+                      'multi-player-math': 'Math Race',
+                      'custom-math-quiz': 'Custom Math Quiz',
+                      'custom-math-race': 'Custom Math Race'
+                    };
+                    return gameNames[gameId || ''] || 'Unknown Game';
+                  };
+
+                  const formatDate = (timestamp: number) => {
+                    const now = Date.now();
+                    const diff = now - timestamp;
+                    const minutes = Math.floor(diff / (1000 * 60));
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+                    if (minutes < 1) return 'Just now';
+                    if (minutes < 60) return `${minutes}m ago`;
+                    if (hours < 24) return `${hours}h ago`;
+                    if (days < 7) return `${days}d ago`;
+                    return new Date(timestamp).toLocaleDateString();
+                  };
+
+                  const accuracy = activity.questionsAnswered > 0 ? Math.round((activity.score / activity.questionsAnswered) * 100) : 0;
+
+                  return (
+                    <div key={`${activity.gameCode}-${index}`} className="flex items-center justify-between p-4 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <Trophy className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{formatGameName(activity.gameId)}</p>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <span>Score: {activity.score}</span>
+                            <span>Accuracy: {accuracy}%</span>
+                            <span>{activity.questionsAnswered}/{activity.totalQuestions} questions</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={activity.isCompleted ? "default" : "secondary"}>
+                          {activity.isCompleted ? "Completed" : "In Progress"}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(activity.completedAt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-muted-foreground">
+                <div className="text-center">
+                  <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg mb-2">No recent activity</p>
+                  <p className="text-sm">Play your first game to see your activity here!</p>
+                  <Button className="mt-4" asChild>
+                    <Link href="/dashboard">Browse Games</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
