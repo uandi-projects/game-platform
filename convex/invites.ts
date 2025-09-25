@@ -125,21 +125,50 @@ export const sendInviteEmail = action({
       const { data, error } = await resend.emails.send({
         from: process.env.FROM_EMAIL!,
         to: [email],
-        subject: "You've been invited to join our platform",
+        subject: "You're invited to join! 🎮 - U&I Game Platform",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">You've been invited!</h1>
-            <p>Hello,</p>
-            <p>You've been invited to join our platform. Click the link below to create your account:</p>
-            <div style="margin: 30px 0;">
-              <a href="${inviteUrl}"
-                 style="background-color: #007cba; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                Create Account
-              </a>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden;">
+            <div style="background: white; margin: 2px; border-radius: 10px; padding: 40px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #4f46e5; font-size: 28px; margin: 0; font-weight: bold;">🎮 U&I Game Platform</h1>
+                <p style="color: #6b7280; font-size: 16px; margin: 10px 0 0 0;">Educational Gaming Made Fun</p>
+              </div>
+
+              <div style="background: #f8fafc; padding: 30px; border-radius: 8px; border-left: 4px solid #4f46e5;">
+                <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 22px;">You've been invited! 🚀</h2>
+                <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">Hello there!</p>
+                <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+                  You've been invited to join <strong>U&I Game Platform</strong> - where learning meets fun!
+                  Our educational gaming platform makes math and learning engaging through interactive games and challenges.
+                </p>
+                <p style="color: #374151; line-height: 1.6; margin: 0;">
+                  Click the button below to create your account and start your educational gaming journey:
+                </p>
+              </div>
+
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${inviteUrl}"
+                   style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+                  🎯 Create My Account
+                </a>
+              </div>
+
+              <div style="background: #fef3c7; padding: 20px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 30px 0;">
+                <p style="color: #92400e; margin: 0; font-size: 14px;">
+                  ⏰ <strong>Important:</strong> This invitation will expire in 7 days for security reasons.
+                </p>
+              </div>
+
+              <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
+                  If you didn't expect this invitation, you can safely ignore this email.
+                </p>
+                <p style="color: #374151; margin: 0; font-weight: 500;">
+                  Happy Gaming!<br>
+                  <span style="color: #4f46e5;">The U&I Game Platform Team</span>
+                </p>
+              </div>
             </div>
-            <p>This invitation will expire in 7 days.</p>
-            <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-            <p>Best regards,<br>The Team</p>
           </div>
         `,
       });
@@ -197,21 +226,49 @@ export const sendPasswordResetEmail = action({
       const { data, error } = await resend.emails.send({
         from: process.env.FROM_EMAIL!,
         to: [email],
-        subject: "Reset your password",
+        subject: "Reset your password 🔒 - U&I Game Platform",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">Reset Your Password</h1>
-            <p>Hello,</p>
-            <p>You requested to reset your password. Click the link below to set a new password:</p>
-            <div style="margin: 30px 0;">
-              <a href="${resetUrl}"
-                 style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                Reset Password
-              </a>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden;">
+            <div style="background: white; margin: 2px; border-radius: 10px; padding: 40px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #4f46e5; font-size: 28px; margin: 0; font-weight: bold;">🎮 U&I Game Platform</h1>
+                <p style="color: #6b7280; font-size: 16px; margin: 10px 0 0 0;">Educational Gaming Made Fun</p>
+              </div>
+
+              <div style="background: #fef2f2; padding: 30px; border-radius: 8px; border-left: 4px solid #dc2626;">
+                <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 22px;">🔐 Reset Your Password</h2>
+                <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">Hello there!</p>
+                <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+                  You requested to reset your password for your <strong>U&I Game Platform</strong> account.
+                </p>
+                <p style="color: #374151; line-height: 1.6; margin: 0;">
+                  Click the button below to set a new password and get back to gaming:
+                </p>
+              </div>
+
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${resetUrl}"
+                   style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">
+                  🔑 Reset My Password
+                </a>
+              </div>
+
+              <div style="background: #fef3c7; padding: 20px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 30px 0;">
+                <p style="color: #92400e; margin: 0; font-size: 14px;">
+                  ⏰ <strong>Important:</strong> This password reset link will expire in 1 hour for security reasons.
+                </p>
+              </div>
+
+              <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
+                  If you didn't request this password reset, you can safely ignore this email.
+                </p>
+                <p style="color: #374151; margin: 0; font-weight: 500;">
+                  Stay secure!<br>
+                  <span style="color: #4f46e5;">The U&I Game Platform Team</span>
+                </p>
+              </div>
             </div>
-            <p>This link will expire in 1 hour for security reasons.</p>
-            <p>If you didn't request this password reset, you can safely ignore this email.</p>
-            <p>Best regards,<br>The Team</p>
           </div>
         `,
       });
