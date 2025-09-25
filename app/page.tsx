@@ -135,7 +135,7 @@ function GameCodeEntry() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (gameCode.length === 8) {
+    if (gameCode.length === 6) {
       router.push(`/game/${gameCode.toUpperCase()}`);
     }
   };
@@ -146,15 +146,15 @@ function GameCodeEntry() {
         type="text"
         value={gameCode}
         onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-        placeholder="Enter 8-character game code"
-        maxLength={8}
+        placeholder="Enter 6-character game code"
+        maxLength={6}
         className="text-center text-xl font-mono tracking-widest uppercase"
-        pattern="[A-Z0-9]{8}"
+        pattern="[A-Z0-9]{6}"
         required
       />
       <Button
         type="submit"
-        disabled={gameCode.length !== 8}
+        disabled={gameCode.length !== 6}
         className="text-lg font-semibold"
         size="lg"
       >

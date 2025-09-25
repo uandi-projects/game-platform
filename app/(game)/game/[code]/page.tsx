@@ -1,9 +1,10 @@
 "use client";
 
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth, useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader } from "@/components/ui/loader";
 
 export default function GamePage({ params }: { params: Promise<{ code: string }> }) {
@@ -11,18 +12,36 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
   const currentUser = useQuery(api.users.getCurrentUser);
   const [username, setUsername] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const router = useRouter();
 
   const resolvedParams = use(params);
   const gameCode = resolvedParams.code.toUpperCase();
 
+  // Get game instance by code
+  const gameInstance = useQuery(api.games.getGameInstanceByCode, { code: gameCode });
+  const joinGame = useMutation(api.games.joinGame);
+
+  // Redirect based on game type
+  useEffect(() => {
+    if (gameInstance && gameInstance.gameId) {
+      if (gameInstance.type === "multiplayer") {
+        // Redirect multiplayer games to room first
+        router.push(`/room/${gameCode}`);
+      } else {
+        // Direct to single player game
+        router.push(`/game/${gameInstance.gameId}/${gameCode}`);
+      }
+    }
+  }, [gameInstance, router, gameCode]);
+
   // Validate game code format
-  if (!/^[A-Z0-9]{8}$/.test(gameCode)) {
+  if (!/^[A-Z0-9]{6}$/.test(gameCode)) {
     return (
       <div className="min-h-screen bg-background p-8 flex items-center justify-center">
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-red-600">Invalid Game Code</h1>
           <p className="mb-6 text-gray-600 dark:text-gray-400">
-            Game codes must be exactly 8 characters long and contain only letters and numbers.
+            Game codes must be exactly 6 characters long and contain only letters and numbers.
           </p>
           <Link
             href="/"
@@ -36,7 +55,7 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
   }
 
   // Show loading state
-  if (currentUser === undefined) {
+  if (currentUser === undefined || gameInstance === undefined) {
     return (
       <div className="min-h-screen bg-background p-8 flex items-center justify-center">
         <Loader />
@@ -44,13 +63,34 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
     );
   }
 
+  // Show error if game not found
+  if (gameInstance === null) {
+    return (
+      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4 text-red-600">Game Not Found</h1>
+          <p className="mb-6 text-gray-600 dark:text-gray-400">
+            No game found with code <span className="font-mono font-bold">{gameCode}</span>
+          </p>
+          <Link
+            href="/"
+            className="bg-foreground text-background px-6 py-2 rounded-md hover:opacity-80 transition-opacity"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const handleJoinGame = async () => {
     setIsJoining(true);
     try {
-      // TODO: Implement game joining logic
-      // For now, just simulate joining
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(`Joined game ${gameCode}!`);
+      if (gameInstance.type === "multiplayer") {
+        await joinGame({ code: gameCode });
+      }
+      // Redirect to the specific game
+      router.push(`/game/${gameInstance.gameId}/${gameCode}`);
     } catch (error) {
       console.error("Error joining game:", error);
       alert("Failed to join game. Please try again.");
@@ -126,14 +166,16 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
           </p>
         </div>
 
-        {/* Game info placeholder */}
+        {/* Game info */}
         <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 mb-6 border border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-bold mb-2">Game Information</h2>
           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-            <p>• Status: Waiting for players</p>
-            <p>• Players: 3/30</p>
-            <p>• Game Type: Multiple Choice Quiz</p>
-            <p>• Topic: Science Fundamentals</p>
+            <p>• Status: {gameInstance.status}</p>
+            <p>• Type: {gameInstance.type === "single-player" ? "Single Player" : "Multiplayer"}</p>
+            {gameInstance.type === "multiplayer" && (
+              <p>• Players: {gameInstance.participants?.length || 0}</p>
+            )}
+            <p>• Created by: {gameInstance.creator?.name || "Unknown"}</p>
           </div>
         </div>
 

@@ -1,0 +1,20 @@
+{
+  "games": [
+    {
+      "id": "single-player-math",
+      "name": "Math Quiz Solo",
+      "type": "single-player",
+      "description": "Test your math skills with addition and subtraction",
+      "showTimer": true,
+      "maxTime": 300
+    },
+    {
+      "id": "multi-player-math",
+      "name": "Math Race",
+      "type": "multiplayer",
+      "description": "Race against others to solve math problems",
+      "showTimer": true,
+      "maxTime": 180
+    }
+  ]
+}

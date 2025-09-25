@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,14 +17,15 @@ import {
   Settings,
   UserPlus,
   Calendar,
-  Trophy,
-  PlusCircle,
-  FolderOpen
+  Trophy
 } from "lucide-react";
 
 export default function DashboardPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
+  const availableGames = useQuery(api.games.getAvailableGames);
+  const createGameInstance = useMutation(api.games.createGameInstance);
   const router = useRouter();
+  const [isCreatingGame, setIsCreatingGame] = useState<string | null>(null);
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -136,77 +137,102 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Role-based Dashboard Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentUser.role === "student" && (
-              <>
-                <DashboardCard
-                  title="Single Player Games"
-                  description="Practice and improve your skills with solo challenges"
-                  href="/games/single-player"
-                  icon={<Gamepad2 className="h-6 w-6" />}
-                  color="bg-blue-500"
-                />
-                <DashboardCard
-                  title="My Progress"
-                  description="View your learning progress and achievement scores"
-                  href="/progress"
-                  icon={<BarChart3 className="h-6 w-6" />}
-                  color="bg-green-500"
-                />
-                <DashboardCard
-                  title="Game History"
-                  description="Review past games and achievements you've earned"
-                  href="/history"
-                  icon={<Trophy className="h-6 w-6" />}
-                  color="bg-purple-500"
-                />
-              </>
+          {/* Available Games */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-6">Available Games</h2>
+            {availableGames === undefined ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader />
+              </div>
+            ) : availableGames === null || availableGames.length === 0 ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center h-32 text-muted-foreground">
+                    <div className="text-center">
+                      <Gamepad2 className="h-8 w-8 mx-auto mb-2" />
+                      <p>No games available at the moment</p>
+                      <p className="text-sm">Check back later for new games!</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {availableGames.map((game) => (
+                  <GameCard
+                    key={game.id}
+                    game={game}
+                    isCreating={isCreatingGame === game.id}
+                    onPlay={async () => {
+                      setIsCreatingGame(game.id);
+                      try {
+                        const instance = await createGameInstance({ gameId: game.id });
+                        router.push(`/game/${instance.code}`);
+                      } catch (error) {
+                        console.error("Failed to create game instance:", error);
+                      } finally {
+                        setIsCreatingGame(null);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
             )}
+          </div>
+
+          {/* Quick Access Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <Trophy className="h-6 w-6 text-muted-foreground" />
+                  <div className="text-right">
+                    <h3 className="text-xl font-bold mb-1">My Progress</h3>
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-sm mb-4">
+                  View your learning progress and achievements
+                </p>
+                <Button size="sm" variant="outline" className="w-full" asChild>
+                  <Link href="/progress">View Progress</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <Calendar className="h-6 w-6 text-muted-foreground" />
+                  <div className="text-right">
+                    <h3 className="text-xl font-bold mb-1">Game History</h3>
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Review past games and achievements
+                </p>
+                <Button size="sm" variant="outline" className="w-full" asChild>
+                  <Link href="/history">View History</Link>
+                </Button>
+              </CardContent>
+            </Card>
 
             {(currentUser.role === "teacher" || currentUser.role === "admin") && (
-              <>
-                <DashboardCard
-                  title="Create Game"
-                  description="Design new educational games for your students"
-                  href="/games/create"
-                  icon={<PlusCircle className="h-6 w-6" />}
-                  color="bg-green-500"
-                />
-                <DashboardCard
-                  title="My Games"
-                  description="Manage and organize your created games"
-                  href="/games/manage"
-                  icon={<FolderOpen className="h-6 w-6" />}
-                  color="bg-blue-500"
-                />
-                <DashboardCard
-                  title="Analytics"
-                  description="View student performance and engagement metrics"
-                  href="/analytics"
-                  icon={<BarChart3 className="h-6 w-6" />}
-                  color="bg-purple-500"
-                />
-              </>
-            )}
-
-            {currentUser.role === "admin" && (
-              <>
-                <DashboardCard
-                  title="Platform Analytics"
-                  description="View overall platform usage and system metrics"
-                  href="/admin/analytics"
-                  icon={<BarChart3 className="h-6 w-6" />}
-                  color="bg-orange-500"
-                />
-                <DashboardCard
-                  title="System Settings"
-                  description="Configure platform settings and preferences"
-                  href="/admin/settings"
-                  icon={<Settings className="h-6 w-6" />}
-                  color="bg-red-500"
-                />
-              </>
+              <Card className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <BarChart3 className="h-6 w-6 text-muted-foreground" />
+                    <div className="text-right">
+                      <h3 className="text-xl font-bold mb-1">Analytics</h3>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    View student performance and engagement
+                  </p>
+                  <Button size="sm" variant="outline" className="w-full" asChild>
+                    <Link href="/analytics">View Analytics</Link>
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
 
@@ -231,32 +257,43 @@ export default function DashboardPage() {
   );
 }
 
-function DashboardCard({ title, description, href, icon, color }: {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ReactNode;
-  color: string;
+function GameCard({ game, isCreating, onPlay }: {
+  game: {
+    id: string;
+    name: string;
+    type: string;
+    description: string;
+  };
+  isCreating: boolean;
+  onPlay: () => void;
 }) {
   return (
-    <Link href={href} className="group">
-      <Card className={`${color} text-white hover:opacity-90 transition-opacity border-0 h-full`}>
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="opacity-80">
-              {icon}
-            </div>
-            <div className="text-right">
-              <h3 className="text-xl font-bold mb-1 group-hover:translate-x-1 transition-transform">
-                {title}
-              </h3>
-            </div>
-          </div>
-          <p className="text-white/80 text-sm">
-            {description}
-          </p>
-        </CardContent>
-      </Card>
-    </Link>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <Gamepad2 className="h-6 w-6 text-muted-foreground" />
+          <Badge variant={game.type === "single-player" ? "secondary" : "default"}>
+            {game.type === "single-player" ? "Single Player" : "Multiplayer"}
+          </Badge>
+        </div>
+        <h3 className="text-xl font-bold mb-2">{game.name}</h3>
+        <p className="text-muted-foreground text-sm mb-4">{game.description}</p>
+        <Button
+          size="sm"
+          className="w-full"
+          onClick={onPlay}
+          disabled={isCreating}
+        >
+          {isCreating ? (
+            <>
+              <Loader className="mr-2 h-4 w-4" />
+              Starting...
+            </>
+          ) : (
+            "Play Now"
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
