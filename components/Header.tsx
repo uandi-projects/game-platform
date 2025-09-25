@@ -9,10 +9,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { ThemeToggle, MobileThemeToggle } from "@/components/theme-toggle";
+import { Loader } from "@/components/ui/loader";
 import { Gamepad2, UserPlus, Settings, User, LogOut, Menu, LayoutDashboard } from "lucide-react";
 
 export default function Header() {
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const currentUser = useQuery(api.users.getCurrentUser);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -26,7 +27,9 @@ export default function Header() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center gap-2">
-        {isAuthenticated && currentUser && (
+        {isLoading ? (
+          <Loader size="sm" />
+        ) : isAuthenticated && currentUser && (
           <>
             <Button asChild size="sm" variant="ghost">
               <Link href="/dashboard" className="flex items-center gap-2">
@@ -69,8 +72,12 @@ export default function Header() {
             </Button>
           </>
         )}
-        <ThemeToggle />
-        <SignOutButton />
+        {!isLoading && (
+          <>
+            <ThemeToggle />
+            <SignOutButton />
+          </>
+        )}
       </div>
 
       {/* Mobile Menu */}
@@ -93,7 +100,11 @@ export default function Header() {
 
               {/* Content */}
               <div className="flex-1 p-6">
-                {isAuthenticated && currentUser ? (
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <Loader />
+                  </div>
+                ) : isAuthenticated && currentUser ? (
                   <div className="flex flex-col space-y-6">
                     {/* User Profile */}
                     <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
