@@ -101,10 +101,8 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
         setCurrentQuestionIndex(nextQuestionIndex);
         setScore(userProgress.score);
 
-        // Create answers array with correct length - we don't store individual answers
-        // but we need the array length to match questions answered
-        const restoredAnswers = new Array(userProgress.questionsAnswered).fill(1); // Use 1 instead of 0 as placeholder
-        setUserAnswers(restoredAnswers);
+        // Don't restore fake answers - only restore progress state
+        // The userAnswers array should only contain actual user inputs
 
         // If user completed all questions, mark as finished
         if (userProgress.questionsAnswered >= questions.length) {
@@ -117,25 +115,19 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
     }
   }, [gameProgress, currentUser, questions.length, guestName, gameStarted]);
 
-  // Update progress in database (only when answers change, not on restoration)
+  // Update progress in database
   useEffect(() => {
-    if (gameStarted && questions.length > 0 && (currentUser || guestName) && userAnswers.length > 0) {
-      // Only update if we have actual answers (not restored from database)
-      const hasActualAnswers = !userAnswers.every(answer => answer === 1);
-
-      if (hasActualAnswers) {
-        const currentScore = userAnswers.filter((answer, index) => answer === questions[index]?.answer).length;
-
-        updateGameProgress({
-          gameCode,
-          questionsAnswered: Math.max(0, currentQuestionIndex),
-          totalQuestions: questions.length,
-          score: currentScore,
-          guestName: !currentUser ? (guestName || "Guest Player") : undefined,
-        }).catch(console.error);
-      }
+    if (gameStarted && questions.length > 0 && (currentUser || guestName)) {
+      // Use the current score directly (it's maintained separately from fake answers)
+      updateGameProgress({
+        gameCode,
+        questionsAnswered: Math.max(0, currentQuestionIndex),
+        totalQuestions: questions.length,
+        score: score,
+        guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+      }).catch(console.error);
     }
-  }, [userAnswers, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, currentQuestionIndex]);
+  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
 
   const calculateFinalScore = useCallback(async (answers: number[]) => {
     let correctAnswers = 0;
@@ -281,34 +273,42 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="font-semibold">Your Results:</h3>
-              {questions.map((question, index) => {
-                const userAnswer = userAnswers[index];
-                const isCorrect = userAnswer !== undefined && userAnswer === question.answer;
+            {userAnswers.length > 0 ? (
+              <div className="space-y-2">
+                <h3 className="font-semibold">Your Results:</h3>
+                {questions.map((question, index) => {
+                  const userAnswer = userAnswers[index];
+                  const isCorrect = userAnswer !== undefined && userAnswer === question.answer;
 
-                return (
-                  <div key={question.id} className="flex items-center justify-between p-2 rounded border">
-                    <span>{question.question} = ?</span>
-                    <div className="flex items-center gap-2">
-                      <span className={isCorrect ? "text-green-600" : "text-red-600"}>
-                        {userAnswer !== undefined ? userAnswer : "No answer"}
-                      </span>
-                      {isCorrect ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600" />
-                      )}
-                      {!isCorrect && (
-                        <span className="text-sm text-muted-foreground">
-                          (Correct: {question.answer})
+                  return (
+                    <div key={question.id} className="flex items-center justify-between p-2 rounded border">
+                      <span>{question.question} = ?</span>
+                      <div className="flex items-center gap-2">
+                        <span className={isCorrect ? "text-green-600" : "text-red-600"}>
+                          {userAnswer !== undefined ? userAnswer : "No answer"}
                         </span>
-                      )}
+                        {isCorrect ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-600" />
+                        )}
+                        {!isCorrect && (
+                          <span className="text-sm text-muted-foreground">
+                            (Correct: {question.answer})
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center p-6 bg-muted rounded-lg">
+                <p className="text-muted-foreground">
+                  Race completed in a previous session. Individual answers not available.
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button onClick={() => window.location.reload()} className="flex-1">
@@ -383,7 +383,7 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
                   className="w-full text-center text-2xl p-4 border rounded-lg"
                   placeholder="Your answer"
                   autoFocus
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter' && currentAnswer.trim()) {
                       handleAnswerSubmit();
                     }
