@@ -17,6 +17,18 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Accept build arguments for environment variables
+ARG NEXT_PUBLIC_CONVEX_URL
+ARG CONVEX_DEPLOYMENT
+ARG AUTH_SECRET
+ARG RESEND_API_KEY
+
+# Set environment variables for the build process
+ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
+ENV CONVEX_DEPLOYMENT=$CONVEX_DEPLOYMENT
+ENV AUTH_SECRET=$AUTH_SECRET
+ENV RESEND_API_KEY=$RESEND_API_KEY
+
 # Build the Next.js application
 RUN npm run build
 
