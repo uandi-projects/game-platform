@@ -1,19 +1,19 @@
 "use client";
 
 import { useConvexAuth, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { api } from "../../../../convex/_generated/api";
+import { useState, use } from "react";
 import Link from "next/link";
+import { Loader } from "@/components/ui/loader";
 
-export default function GamePage({ params }: { params: { code: string } }) {
+export default function GamePage({ params }: { params: Promise<{ code: string }> }) {
   const { isAuthenticated } = useConvexAuth();
   const currentUser = useQuery(api.users.getCurrentUser);
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [isJoining, setIsJoining] = useState(false);
 
-  const gameCode = params.code.toUpperCase();
+  const resolvedParams = use(params);
+  const gameCode = resolvedParams.code.toUpperCase();
 
   // Validate game code format
   if (!/^[A-Z0-9]{8}$/.test(gameCode)) {
@@ -39,7 +39,7 @@ export default function GamePage({ params }: { params: { code: string } }) {
   if (currentUser === undefined) {
     return (
       <div className="min-h-screen bg-background p-8 flex items-center justify-center">
-        <p>Loading...</p>
+        <Loader />
       </div>
     );
   }

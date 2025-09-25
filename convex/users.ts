@@ -59,11 +59,9 @@ export const deleteUser = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, { userId }) => {
-    const { requireAdmin } = await import("./authorization");
     await requireAdmin(ctx);
 
     // Get current user to prevent self-deletion
-    const { getAuthenticatedUser } = await import("./authorization");
     const currentUser = await getAuthenticatedUser(ctx);
 
     if (currentUser._id === userId) {
@@ -123,6 +121,30 @@ export const updatePassword = mutation({
     // For now, we'll just log this - the actual password update would need
     // to be handled by Convex Auth's password provider
     return { success: true };
+  },
+});
+
+// Update user profile (authenticated user can update their own profile)
+export const updateProfile = mutation({
+  args: {
+    name: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  },
+  handler: async (ctx, { name, phone }) => {
+    const currentUser = await getAuthenticatedUser(ctx);
+
+    const updates: any = {};
+    if (name !== undefined) updates.name = name;
+    if (phone !== undefined) updates.phone = phone;
+
+    if (Object.keys(updates).length === 0) {
+      throw new ConvexError("No updates provided");
+    }
+
+    await ctx.db.patch(currentUser._id, updates);
+
+    const updatedUser = await ctx.db.get(currentUser._id);
+    return updatedUser;
   },
 });
 
