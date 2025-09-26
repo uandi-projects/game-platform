@@ -16,9 +16,9 @@ import { Trophy, Calendar, ArrowRight } from "lucide-react";
 export default function Home() {
 
   return (
-    <div>
+    <div className="min-h-screen">
       <Header />
-      <main className="p-8 flex flex-col gap-8">
+      <main className="flex flex-col gap-8 w-full">
         <Content />
       </main>
     </div>
@@ -43,7 +43,7 @@ function Content() {
   // Show welcome content for authenticated users
   if (isAuthenticated && currentUser) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto px-4 pt-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">
             Welcome, {currentUser.name || currentUser.email}!
@@ -188,7 +188,7 @@ function Content() {
 
   // Show public landing page for unauthenticated users
   return (
-    <div className="max-w-4xl mx-auto text-center">
+    <div className="max-w-4xl mx-auto px-4 pt-8 text-center">
       <h1 className="text-5xl font-bold mb-6">Educational Game Platform</h1>
       <p className="text-xl text-gray-600 dark:text-gray-400 mb-12">
         Join interactive learning games or create your own educational experiences
