@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { useState, useEffect, use, useCallback } from "react";
+import { useState, useEffect, use, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [score, setScore] = useState(0);
   const [guestName] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load questions from the database
   useEffect(() => {
@@ -199,6 +200,13 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
     }
   };
 
+  // Focus input when question changes
+  useEffect(() => {
+    if (gameStarted && !gameFinished && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [currentQuestionIndex, gameStarted, gameFinished]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -358,6 +366,7 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
 
               <div className="max-w-xs mx-auto">
                 <input
+                  ref={inputRef}
                   type="number"
                   value={currentAnswer}
                   onChange={(e) => setCurrentAnswer(e.target.value)}

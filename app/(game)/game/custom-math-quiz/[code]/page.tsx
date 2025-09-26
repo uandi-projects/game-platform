@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { useState, useEffect, use, useCallback } from "react";
+import { useState, useEffect, use, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
   const [timeLeft, setTimeLeft] = useState(300); // Default 5 minutes
   const [score, setScore] = useState(0);
   const [guestName] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Get custom config from game instance
   const customConfig = gameInstance?.customConfig as { timeLimit: number; questionCount: number } | undefined;
@@ -192,6 +193,13 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
       setGameFinished(true);
     }
   };
+
+  // Focus input when question changes
+  useEffect(() => {
+    if (gameStarted && !gameFinished && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [currentQuestionIndex, gameStarted, gameFinished]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -352,6 +360,7 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
 
               <div className="max-w-xs mx-auto">
                 <input
+                  ref={inputRef}
                   type="number"
                   value={currentAnswer}
                   onChange={(e) => setCurrentAnswer(e.target.value)}
