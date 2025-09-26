@@ -162,7 +162,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
             <div className="text-center space-y-2 p-4 bg-muted rounded-lg">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Users className="h-5 w-5" />
-                <span className="font-semibold">{gameParticipants?.totalCount || 0} Players Joined</span>
+                <span className="font-semibold">{gameParticipants?.allParticipants?.length || 0} Players Joined</span>
               </div>
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>• 10 addition and subtraction questions</p>
@@ -259,7 +259,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
             )}
 
             {/* Start Game Button (Host Only) */}
-            {isHost && gameParticipants?.totalCount && gameParticipants.totalCount > 0 && (
+            {isHost && gameParticipants?.allParticipants?.length && gameParticipants.allParticipants.length > 0 && (
               <div className="pt-4 border-t">
                 <Button
                   onClick={handleStartGame}
