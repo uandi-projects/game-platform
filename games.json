@@ -6,7 +6,9 @@
       "type": "single-player",
       "description": "Test your math skills with addition and subtraction",
       "showTimer": true,
-      "maxTime": 300
+      "maxTime": 300,
+      "ogTitle": "Math Quiz Solo Challenge",
+      "ogDescription": "Challenge yourself with math problems! Test your addition and subtraction skills."
     },
     {
       "id": "multi-player-math",
@@ -14,7 +16,9 @@
       "type": "multiplayer",
       "description": "Race against others to solve math problems",
       "showTimer": true,
-      "maxTime": 180
+      "maxTime": 180,
+      "ogTitle": "Math Race - Multiplayer Challenge",
+      "ogDescription": "Race against other players to solve math problems the fastest!"
     },
     {
       "id": "custom-math-quiz",
@@ -23,7 +27,9 @@
       "description": "Create your own math quiz with custom settings",
       "showTimer": true,
       "maxTime": 300,
-      "isCustom": true
+      "isCustom": true,
+      "ogTitle": "Custom Math Quiz",
+      "ogDescription": "Create and play custom math quizzes tailored to your skill level."
     },
     {
       "id": "custom-math-race",
@@ -32,7 +38,9 @@
       "description": "Create a custom math race with your own settings",
       "showTimer": true,
       "maxTime": 180,
-      "isCustom": true
+      "isCustom": true,
+      "ogTitle": "Custom Math Race - Multiplayer",
+      "ogDescription": "Create custom multiplayer math races with your own rules and settings."
     }
   ]
 }

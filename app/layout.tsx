@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "U&I Game Platform",
   description: "Educational gaming platform for interactive learning experiences",
   icons: {
-    icon: "/convex.svg",
+    icon: "/favicon.svg",
   },
 };
 

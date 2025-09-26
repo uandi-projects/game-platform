@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <!-- White background with rounded corners -->
+  <rect width="32" height="32" rx="6" ry="6" fill="white"/>
+
+  <!-- Gamepad icon centered and properly sized -->
+  <g transform="translate(16, 16)" stroke="#0f0f0f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="-4" x2="0" y1="-1" y2="-1" />
+    <line x1="-2" x2="-2" y1="-3" y2="1" />
+    <line x1="3" x2="3.01" y1="0" y2="0" />
+    <line x1="6" x2="6.01" y1="-2" y2="-2" />
+    <path d="M5.32-7H-5.32a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C-9.396-2.584-10 2.456-10 4a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1-2.172 4h4.344a2 2 0 0 1 1.414.586L5 6c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 5.32-7z" />
+  </g>
+</svg>

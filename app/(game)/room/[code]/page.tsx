@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
 import { Users, Crown, UserCircle, ExternalLink } from "lucide-react";
+import ShareRoomButton from "@/components/ShareRoomButton";
 
 export default function GameRoom({ params }: { params: Promise<{ code: string }> }) {
   const { isAuthenticated } = useConvexAuth();
@@ -167,9 +168,12 @@ export default function GameRoom({ params }: { params: Promise<{ code: string }>
             <CardTitle className="text-3xl mb-2">
               {gameInstance.customConfig ? 'Custom Math Race' : 'Math Race'}
             </CardTitle>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               Game Code: <span className="font-mono font-bold text-lg">{gameCode}</span>
             </p>
+            <div className="flex justify-center">
+              <ShareRoomButton gameCode={gameCode} />
+            </div>
           </CardHeader>
 
           <CardContent className="space-y-6">
