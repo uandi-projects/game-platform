@@ -87,7 +87,7 @@ export default function ProfilePage() {
         <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" size="sm" onClick={() => router.back()}>
+          <Button variant="outline" size="sm" onClick={() => router.back()} className="hidden sm:inline-flex">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>

@@ -131,7 +131,7 @@ export default function AnalyticsPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="outline" size="icon" asChild>
+            <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex">
               <Link href="/dashboard">
                 <ArrowLeft className="h-4 w-4" />
               </Link>

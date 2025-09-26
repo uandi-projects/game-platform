@@ -7,7 +7,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
 import { ThemeToggle, MobileThemeToggle } from "@/components/theme-toggle";
 import { Loader } from "@/components/ui/loader";
 import { Gamepad2, UserPlus, Settings, User, LogOut, Menu, LayoutDashboard } from "lucide-react";
@@ -88,6 +88,7 @@ export default function Header() {
             </Button>
           </DrawerTrigger>
           <DrawerContent className="h-full w-80 right-0 left-auto rounded-l-lg">
+            <DrawerTitle className="sr-only">Navigation Menu</DrawerTitle>
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="p-6 border-b">

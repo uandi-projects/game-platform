@@ -107,20 +107,22 @@ export default function AdminPage() {
       <div className="min-h-screen p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">User Management</h1>
-              <p className="text-muted-foreground">
-                Manage all users, roles, and permissions
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <Button asChild>
-                <Link href="/invite">Invite Users</Link>
-              </Button>
-              <Button variant="outline" onClick={() => router.push("/")}>
-                Back to Home
-              </Button>
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">User Management</h1>
+                <p className="text-muted-foreground">
+                  Manage all users, roles, and permissions
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <Button asChild className="w-full sm:w-auto">
+                  <Link href="/invite">Invite Users</Link>
+                </Button>
+                <Button variant="outline" onClick={() => router.push("/")} className="w-full sm:w-auto hidden sm:inline-flex">
+                  Back to Home
+                </Button>
+              </div>
             </div>
           </div>
 
