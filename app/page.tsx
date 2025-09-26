@@ -263,7 +263,7 @@ function GameCodeEntry() {
         type="text"
         value={gameCode}
         onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-        placeholder="Enter 6-character game code"
+        placeholder="6-letter game code"
         maxLength={6}
         className="text-center text-xl font-mono tracking-widest uppercase"
         pattern="[A-Z0-9]{6}"
