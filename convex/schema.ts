@@ -14,6 +14,8 @@ const schema = defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     role: v.union(v.literal("admin"), v.literal("teacher"), v.literal("student")),
+    soundFeedback: v.optional(v.boolean()),
+    hapticFeedback: v.optional(v.boolean()),
   }).index("email", ["email"]),
   numbers: defineTable({
     value: v.number(),

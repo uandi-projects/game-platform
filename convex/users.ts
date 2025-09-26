@@ -129,13 +129,17 @@ export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
     phone: v.optional(v.string()),
+    soundFeedback: v.optional(v.boolean()),
+    hapticFeedback: v.optional(v.boolean()),
   },
-  handler: async (ctx, { name, phone }) => {
+  handler: async (ctx, { name, phone, soundFeedback, hapticFeedback }) => {
     const currentUser = await getAuthenticatedUser(ctx);
 
     const updates: any = {};
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
+    if (soundFeedback !== undefined) updates.soundFeedback = soundFeedback;
+    if (hapticFeedback !== undefined) updates.hapticFeedback = hapticFeedback;
 
     if (Object.keys(updates).length === 0) {
       throw new ConvexError("No updates provided");

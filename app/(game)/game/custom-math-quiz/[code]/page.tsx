@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Loader } from "@/components/ui/loader";
 import { Trophy, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { useGameFeedback } from "@/components/GameFeedback";
 
 interface Question {
   id: number;
@@ -40,6 +41,12 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
   const [score, setScore] = useState(0);
   const [guestName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Game feedback
+  const { triggerFeedback } = useGameFeedback(
+    currentUser?.soundFeedback ?? true,
+    currentUser?.hapticFeedback ?? true
+  );
 
   // Get custom config from game instance
   const customConfig = gameInstance?.customConfig as { timeLimit: number; questionCount: number } | undefined;
@@ -165,6 +172,10 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
     newAnswers[currentQuestionIndex] = answer;
     setUserAnswers(newAnswers);
     setCurrentAnswer("");
+
+    // Trigger feedback for the answer
+    const isCorrect = answer === questions[currentQuestionIndex]?.answer;
+    triggerFeedback(isCorrect);
 
     const newQuestionIndex = currentQuestionIndex + 1;
     const currentScore = newAnswers.filter((ans, index) => ans === questions[index]?.answer).length;

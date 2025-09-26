@@ -11,12 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, User } from "lucide-react";
 import Header from "@/components/Header";
 
 export default function ProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [soundFeedback, setSoundFeedback] = useState(true);
+  const [hapticFeedback, setHapticFeedback] = useState(true);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -36,6 +39,8 @@ export default function ProfilePage() {
     if (currentUser) {
       setName(currentUser.name || "");
       setPhone(currentUser.phone || "");
+      setSoundFeedback(currentUser.soundFeedback ?? true);
+      setHapticFeedback(currentUser.hapticFeedback ?? true);
     }
   }, [currentUser]);
 
@@ -61,7 +66,12 @@ export default function ProfilePage() {
     setMessage(null);
 
     try {
-      await updateProfile({ name: name || undefined, phone: phone || undefined });
+      await updateProfile({
+        name: name || undefined,
+        phone: phone || undefined,
+        soundFeedback,
+        hapticFeedback
+      });
       setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (error: unknown) {
       setMessage({ type: "error", text: (error as Error)?.message || "Failed to update profile" });
@@ -175,6 +185,45 @@ export default function ProfilePage() {
                 </p>
               </div>
 
+              <div className="space-y-4 pt-4 border-t">
+                <div className="mb-2">
+                  <h3 className="text-lg font-medium">Game Feedback Settings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Control feedback when answering questions in games
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sound-feedback">Sound Feedback</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Play sounds for correct and incorrect answers
+                    </p>
+                  </div>
+                  <Switch
+                    id="sound-feedback"
+                    checked={soundFeedback}
+                    onCheckedChange={setSoundFeedback}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="haptic-feedback">Haptic Feedback</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Vibrate on touch devices for feedback
+                    </p>
+                  </div>
+                  <Switch
+                    id="haptic-feedback"
+                    checked={hapticFeedback}
+                    onCheckedChange={setHapticFeedback}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
               {message && (
                 <Alert variant={message.type === "success" ? "default" : "destructive"}>
                   <AlertDescription>
@@ -193,6 +242,8 @@ export default function ProfilePage() {
                   onClick={() => {
                     setName(currentUser.name || "");
                     setPhone(currentUser.phone || "");
+                    setSoundFeedback(currentUser.soundFeedback ?? true);
+                    setHapticFeedback(currentUser.hapticFeedback ?? true);
                     setMessage(null);
                   }}
                   disabled={loading}

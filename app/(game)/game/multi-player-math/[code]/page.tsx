@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader } from "@/components/ui/loader";
 import { Trophy, Clock, CheckCircle, XCircle, Users, LogOut } from "lucide-react";
 import LiveLeaderboard from "../../../_components/LiveLeaderboard";
+import { useGameFeedback } from "@/components/GameFeedback";
 
 interface Question {
   id: number;
@@ -40,6 +41,12 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
   const [score, setScore] = useState(0);
   const [guestName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Game feedback
+  const { triggerFeedback } = useGameFeedback(
+    currentUser?.soundFeedback ?? true,
+    currentUser?.hapticFeedback ?? true
+  );
 
   // Load questions from the database
   useEffect(() => {
@@ -161,6 +168,10 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     newAnswers[currentQuestionIndex] = answer;
     setUserAnswers(newAnswers);
     setCurrentAnswer("");
+
+    // Trigger feedback for the answer
+    const isCorrect = answer === questions[currentQuestionIndex]?.answer;
+    triggerFeedback(isCorrect);
 
     const newQuestionIndex = currentQuestionIndex + 1;
     const currentScore = newAnswers.filter((ans, index) => ans === questions[index]?.answer).length;
