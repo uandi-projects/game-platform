@@ -259,7 +259,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
             )}
 
             {/* Start Game Button (Host Only) */}
-            {isHost && gameParticipants?.allParticipants?.length && gameParticipants.allParticipants.length > 0 && (
+            {isHost && gameParticipants?.allParticipants && gameParticipants.allParticipants.length > 0 && (
               <div className="pt-4 border-t">
                 <Button
                   onClick={handleStartGame}

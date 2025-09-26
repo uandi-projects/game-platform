@@ -173,7 +173,13 @@ export default function DashboardPage() {
                         } else {
                           // Create regular game instance directly
                           const instance = await createGameInstance({ gameId: game.id });
-                          router.push(`/game/${instance.code}`);
+
+                          // Redirect based on game type to avoid flash
+                          if (instance.type === "multiplayer") {
+                            router.push(`/room/${instance.code}`);
+                          } else {
+                            router.push(`/game/${instance.gameId}/${instance.code}`);
+                          }
                         }
                       } catch (error) {
                         console.error("Failed to create game instance:", error);
