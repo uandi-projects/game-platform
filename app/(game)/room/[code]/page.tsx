@@ -22,10 +22,9 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
     const gameType = games.games.find(game => game.id === gameInstance.gameId);
     const gameTitle = gameType?.ogTitle || gameType?.name || "Game";
     const gameDescription = gameType?.ogDescription || gameType?.description || "Join this game!";
-    const participantCount = gameInstance.participants?.length || 0;
 
     const title = `${gameTitle} - Room ${gameCode}`;
-    const description = `${gameDescription} Currently ${participantCount} player${participantCount !== 1 ? 's' : ''} in the room.`;
+    const description = gameDescription;
 
     return {
       title: `${title} | U&I Game Platform`,
@@ -38,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
         siteName: "U&I Game Platform",
         images: [
           {
-            url: "/og-game.svg",
+            url: "/og-game.png",
             width: 1200,
             height: 630,
             alt: "U&I Game Platform",
