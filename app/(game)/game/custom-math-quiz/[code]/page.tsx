@@ -24,6 +24,7 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
 
   const currentUser = useQuery(api.users.getCurrentUser);
   const gameInstance = useQuery(api.games.getGameInstanceByCode, { code: gameCode });
+  const gameQuestions = useQuery(api.games.getGameQuestions, { code: gameCode });
   const gameProgress = useQuery(api.games.getGameProgress, { gameCode });
   const updateGameProgress = useMutation(api.games.updateGameProgress);
   const startSinglePlayerGame = useMutation(api.games.startSinglePlayerGame);
@@ -42,38 +43,13 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
   // Get custom config from game instance
   const customConfig = gameInstance?.customConfig as { timeLimit: number; questionCount: number } | undefined;
   const timeLimit = customConfig?.timeLimit || 300;
-  const questionCount = customConfig?.questionCount || 10;
 
-  // Generate random math questions based on custom config
+  // Load questions from the database
   useEffect(() => {
-    if (questionCount > 0) {
-      const generateQuestions = () => {
-        const newQuestions: Question[] = [];
-        for (let i = 0; i < questionCount; i++) {
-          let num1 = Math.floor(Math.random() * 50) + 1;
-          let num2 = Math.floor(Math.random() * 30) + 1;
-          const operation = Math.random() > 0.5 ? '+' : '-';
-
-          // For subtraction, ensure first number is bigger than second
-          if (operation === '-' && num1 < num2) {
-            [num1, num2] = [num2, num1]; // Swap the numbers
-          }
-
-          const question = `${num1} ${operation} ${num2}`;
-          const answer = operation === '+' ? num1 + num2 : num1 - num2;
-
-          newQuestions.push({
-            id: i + 1,
-            question,
-            answer
-          });
-        }
-        setQuestions(newQuestions);
-      };
-
-      generateQuestions();
+    if (gameQuestions && Array.isArray(gameQuestions)) {
+      setQuestions(gameQuestions);
     }
-  }, [questionCount]);
+  }, [gameQuestions]);
 
   // Auto-start the game when component loads (like multiplayer)
   useEffect(() => {
@@ -224,7 +200,7 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
   };
 
   // Loading state
-  if (currentUser === undefined || gameInstance === undefined) {
+  if (currentUser === undefined || gameInstance === undefined || gameQuestions === undefined) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader />

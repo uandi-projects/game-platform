@@ -15,6 +15,10 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as authorization from "../authorization.js";
+import type * as gameTypes_custom_math_quiz from "../gameTypes/custom_math_quiz.js";
+import type * as gameTypes_custom_math_race from "../gameTypes/custom_math_race.js";
+import type * as gameTypes_multi_player_math from "../gameTypes/multi_player_math.js";
+import type * as gameTypes_single_player_math from "../gameTypes/single_player_math.js";
 import type * as games from "../games.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
@@ -32,6 +36,10 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authorization: typeof authorization;
+  "gameTypes/custom_math_quiz": typeof gameTypes_custom_math_quiz;
+  "gameTypes/custom_math_race": typeof gameTypes_custom_math_race;
+  "gameTypes/multi_player_math": typeof gameTypes_multi_player_math;
+  "gameTypes/single_player_math": typeof gameTypes_single_player_math;
   games: typeof games;
   http: typeof http;
   invites: typeof invites;

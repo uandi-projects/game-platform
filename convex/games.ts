@@ -6,6 +6,28 @@ import { getAuthenticatedUser } from "./authorization";
 import fs from "fs";
 import path from "path";
 
+// Import game-specific question generators
+import * as singlePlayerMath from "./gameTypes/single_player_math";
+import * as multiPlayerMath from "./gameTypes/multi_player_math";
+import * as customMathQuiz from "./gameTypes/custom_math_quiz";
+import * as customMathRace from "./gameTypes/custom_math_race";
+
+// Function to generate questions based on game type
+function generateQuestionsForGame(gameId: string, customConfig?: any) {
+  switch (gameId) {
+    case "single-player-math":
+      return singlePlayerMath.generateQuestions(customConfig);
+    case "multi-player-math":
+      return multiPlayerMath.generateQuestions(customConfig);
+    case "custom-math-quiz":
+      return customMathQuiz.generateQuestions(customConfig);
+    case "custom-math-race":
+      return customMathRace.generateQuestions(customConfig);
+    default:
+      return [];
+  }
+}
+
 // Get available games from games.json
 export const getAvailableGames = query({
   args: {},
@@ -128,6 +150,9 @@ export const createGameInstance = mutation({
       throw new ConvexError("Game not found");
     }
 
+    // Generate questions for this game
+    const questions = generateQuestionsForGame(gameId, customConfig);
+
     // Generate a unique game code
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -150,6 +175,7 @@ export const createGameInstance = mutation({
         createdAt: Date.now(),
         status: "waiting",
         customConfig: customConfig || undefined,
+        questions: questions,
       });
 
       return {
@@ -170,6 +196,7 @@ export const createGameInstance = mutation({
       createdAt: Date.now(),
       status: "waiting",
       customConfig: customConfig || undefined,
+      questions: questions,
     });
 
     return {
@@ -206,6 +233,25 @@ export const getGameInstanceByCode = query({
         name: creator.name || creator.email,
       } : null,
     };
+  },
+});
+
+// Get questions for a game instance
+export const getGameQuestions = query({
+  args: {
+    code: v.string(),
+  },
+  handler: async (ctx, { code }) => {
+    const gameInstance = await ctx.db
+      .query("gameInstances")
+      .withIndex("by_code", (q) => q.eq("code", code))
+      .first();
+
+    if (!gameInstance) {
+      return null;
+    }
+
+    return gameInstance.questions;
   },
 });
 
