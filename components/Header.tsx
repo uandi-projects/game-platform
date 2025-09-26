@@ -21,8 +21,7 @@ export default function Header() {
     <header className="sticky top-0 z-10 bg-background p-4 border-b border-border flex flex-row justify-between items-center">
       <Link href="/" className="flex items-center gap-2 text-xl font-bold hover:opacity-80 transition-opacity">
         <Gamepad2 className="h-6 w-6" />
-        <span className="hidden sm:inline md:hidden">U&I</span>
-        <span className="hidden md:inline">U&I Game Platform</span>
+        <span>U&I Game Platform</span>
       </Link>
 
       {/* Desktop Navigation */}
