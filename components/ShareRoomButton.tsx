@@ -25,7 +25,7 @@ export default function ShareRoomButton({ gameCode, className }: ShareRoomButton
   const [gameUrl, setGameUrl] = useState("");
 
   useEffect(() => {
-    setGameUrl(`${window.location.origin}/share/${gameCode}`);
+    setGameUrl(window.location.href);
   }, [gameCode]);
 
   useEffect(() => {
