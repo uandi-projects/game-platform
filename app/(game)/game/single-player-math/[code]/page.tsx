@@ -55,10 +55,62 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
     }
   }, [gameQuestions]);
 
-  // Auto-start the game when component loads (like multiplayer)
+  // Restore progress from database and check completion status
   useEffect(() => {
-    if (questions.length > 0 && !gameStarted && gameInstance) {
-      // If game already has a start time, it was already started - just set local state
+    if (!gameProgress || !questions.length || !gameInstance) return;
+
+    // Find current user's progress record
+    const userProgress = gameProgress.find(progress => {
+      if (currentUser) {
+        return progress.participantId === currentUser._id;
+      } else {
+        return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
+      }
+    });
+
+    if (userProgress) {
+      // Check if game is already completed - MUST CHECK THIS FIRST
+      if (userProgress.isCompleted === true) {
+        if (!gameFinished) {
+          setScore(userProgress.score);
+          setGameFinished(true);
+        }
+        if (!gameStarted) {
+          setGameStarted(true);
+        }
+        return;
+      }
+
+      // Restore progress if exists
+      if (userProgress.questionsAnswered > 0 && !gameStarted) {
+        // Only restore if we haven't already answered more questions locally
+        if (userProgress.questionsAnswered > currentQuestionIndex) {
+          setCurrentQuestionIndex(userProgress.questionsAnswered);
+          setScore(userProgress.score);
+        }
+
+        // If user completed all questions, mark as finished
+        if (userProgress.questionsAnswered >= questions.length) {
+          setGameFinished(true);
+        }
+
+        // Set game as started if progress exists
+        setGameStarted(true);
+      } else if (!gameStarted && !gameFinished) {
+        // No progress yet, auto-start the game
+        if (gameInstance.gameStartedAt) {
+          setGameStarted(true);
+        } else {
+          // Start the game immediately for single-player
+          startSinglePlayerGame({ code: gameCode })
+            .then(() => {
+              setGameStarted(true);
+            })
+            .catch(console.error);
+        }
+      }
+    } else if (!gameStarted && !gameFinished) {
+      // No progress record, auto-start the game
       if (gameInstance.gameStartedAt) {
         setGameStarted(true);
       } else {
@@ -70,46 +122,7 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
           .catch(console.error);
       }
     }
-  }, [questions.length, gameStarted, gameInstance, gameCode, startSinglePlayerGame]);
-
-  // Restore progress from database when component loads (debounced to prevent race conditions)
-  useEffect(() => {
-    if (!gameProgress || !questions.length || gameFinished) return;
-
-    const timer = setTimeout(() => {
-      // Find current user's progress record
-      const userProgress = gameProgress.find(progress => {
-        if (currentUser) {
-          return progress.participantId === currentUser._id;
-        } else {
-          return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
-        }
-      });
-
-      if (userProgress && userProgress.questionsAnswered > 0) {
-        // Only restore if we haven't already answered more questions locally
-        if (userProgress.questionsAnswered > currentQuestionIndex) {
-          setCurrentQuestionIndex(userProgress.questionsAnswered);
-          setScore(userProgress.score);
-
-          // Don't restore fake answers - only restore progress state
-          // The userAnswers array should only contain actual user inputs
-        }
-
-        // If user completed all questions, mark as finished
-        if (userProgress.questionsAnswered >= questions.length) {
-          setGameFinished(true);
-        }
-
-        // Set game as started if progress exists
-        if (!gameStarted) {
-          setGameStarted(true);
-        }
-      }
-    }, 100); // Small debounce to prevent rapid state updates
-
-    return () => clearTimeout(timer);
-  }, [gameProgress, currentUser, questions.length, guestName, gameStarted, currentQuestionIndex, gameFinished]);
+  }, [gameProgress, currentUser, questions.length, guestName, gameStarted, currentQuestionIndex, gameFinished, gameInstance, gameCode, startSinglePlayerGame]);
 
   // Update progress in database
   useEffect(() => {

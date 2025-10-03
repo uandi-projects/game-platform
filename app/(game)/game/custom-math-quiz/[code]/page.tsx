@@ -59,10 +59,61 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
     }
   }, [gameQuestions]);
 
-  // Auto-start the game when component loads (like multiplayer)
+  // Restore progress from database and check completion status
   useEffect(() => {
-    if (questions.length > 0 && !gameStarted && gameInstance) {
-      // If game already has a start time, it was already started - just set local state
+    if (!gameProgress || !questions.length || !gameInstance) return;
+
+    // Find current user's progress record
+    const userProgress = gameProgress.find(progress => {
+      if (currentUser) {
+        return progress.participantId === currentUser._id;
+      } else {
+        return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
+      }
+    });
+
+    if (userProgress) {
+      // Check if game is already completed - MUST CHECK THIS FIRST
+      if (userProgress.isCompleted === true) {
+        if (!gameFinished) {
+          setScore(userProgress.score);
+          setGameFinished(true);
+        }
+        if (!gameStarted) {
+          setGameStarted(true);
+        }
+        return;
+      }
+
+      // Restore progress if exists
+      if (userProgress.questionsAnswered > 0 && !gameStarted) {
+        // Restore game state from database
+        const nextQuestionIndex = Math.min(userProgress.questionsAnswered, questions.length - 1);
+        setCurrentQuestionIndex(nextQuestionIndex);
+        setScore(userProgress.score);
+
+        // If user completed all questions, mark as finished
+        if (userProgress.questionsAnswered >= questions.length) {
+          setGameFinished(true);
+        }
+
+        // Set game as started if progress exists
+        setGameStarted(true);
+      } else if (!gameStarted && !gameFinished) {
+        // No progress yet, auto-start the game
+        if (gameInstance.gameStartedAt) {
+          setGameStarted(true);
+        } else {
+          // Start the game immediately for single-player
+          startSinglePlayerGame({ code: gameCode })
+            .then(() => {
+              setGameStarted(true);
+            })
+            .catch(console.error);
+        }
+      }
+    } else if (!gameStarted && !gameFinished) {
+      // No progress record, auto-start the game
       if (gameInstance.gameStartedAt) {
         setGameStarted(true);
       } else {
@@ -74,36 +125,7 @@ export default function CustomMathQuiz({ params }: { params: Promise<{ code: str
           .catch(console.error);
       }
     }
-  }, [questions.length, gameStarted, gameInstance, gameCode, startSinglePlayerGame]);
-
-  // Restore progress from database when component loads (run only once)
-  useEffect(() => {
-    if (gameProgress && questions.length > 0 && currentUser && !gameStarted) {
-      // Find current user's progress record
-      const userProgress = gameProgress.find(progress => {
-        return progress.participantId === currentUser._id;
-      });
-
-      if (userProgress && userProgress.questionsAnswered > 0) {
-        // Restore game state from database
-        // currentQuestionIndex should be the next question to answer
-        const nextQuestionIndex = Math.min(userProgress.questionsAnswered, questions.length - 1);
-        setCurrentQuestionIndex(nextQuestionIndex);
-        setScore(userProgress.score);
-
-        // Don't restore fake answers - only restore progress state
-        // The userAnswers array should only contain actual user inputs
-
-        // If user completed all questions, mark as finished
-        if (userProgress.questionsAnswered >= questions.length) {
-          setGameFinished(true);
-        }
-
-        // Set game as started if progress exists
-        setGameStarted(true);
-      }
-    }
-  }, [gameProgress, currentUser, questions.length]);
+  }, [gameProgress, currentUser, questions.length, guestName, gameStarted, currentQuestionIndex, gameFinished, gameInstance, gameCode, startSinglePlayerGame]);
 
   // Update progress in database
   useEffect(() => {

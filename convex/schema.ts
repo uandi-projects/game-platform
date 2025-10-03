@@ -63,6 +63,7 @@ const schema = defineSchema({
     totalQuestions: v.number(),
     score: v.number(),
     isActive: v.boolean(), // true if currently playing
+    isCompleted: v.optional(v.boolean()), // true if game is completed
     lastUpdated: v.number(),
   }).index("by_game_code", ["gameCode"])
     .index("by_participant", ["gameCode", "participantId"]),

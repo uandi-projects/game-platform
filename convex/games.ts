@@ -280,6 +280,16 @@ export const joinGame = mutation({
       throw new ConvexError("Game has already completed");
     }
 
+    // Check if user has already completed or exited this game
+    const userProgress = await ctx.db
+      .query("gameProgress")
+      .withIndex("by_participant", (q) => q.eq("gameCode", code).eq("participantId", user._id))
+      .first();
+
+    if (userProgress?.isCompleted) {
+      throw new ConvexError("You have already completed or exited this game");
+    }
+
     // Check if user is already a participant
     if (gameInstance.participants.includes(user._id)) {
       return gameInstance;
@@ -316,6 +326,17 @@ export const joinGameAsGuest = mutation({
 
     if (gameInstance.status === "completed") {
       throw new ConvexError("Game has already completed");
+    }
+
+    // Check if guest has already completed or exited this game
+    const guestParticipantId = `guest-${guestName}`;
+    const guestProgress = await ctx.db
+      .query("gameProgress")
+      .withIndex("by_participant", (q) => q.eq("gameCode", code).eq("participantId", guestParticipantId))
+      .first();
+
+    if (guestProgress?.isCompleted) {
+      throw new ConvexError("You have already completed or exited this game");
     }
 
     // For now, we'll store guest names in a separate field
@@ -603,6 +624,7 @@ export const completeGame = mutation({
         totalQuestions,
         score: finalScore,
         isActive: false, // Mark as inactive since game is complete
+        isCompleted: true, // Mark as completed
         lastUpdated: completedAt,
       });
     } else {
@@ -616,6 +638,7 @@ export const completeGame = mutation({
         totalQuestions,
         score: finalScore,
         isActive: false, // Game is complete
+        isCompleted: true, // Mark as completed
         lastUpdated: completedAt,
       });
     }
@@ -644,6 +667,79 @@ export const completeGame = mutation({
           status: "completed",
         });
       }
+    }
+
+    return { success: true };
+  },
+});
+
+// Exit game - marks player as completed so they can't rejoin
+export const exitGame = mutation({
+  args: {
+    gameCode: v.string(),
+    guestName: v.optional(v.string()),
+  },
+  handler: async (ctx, { gameCode, guestName }) => {
+    const userId = await getAuthUserId(ctx);
+
+    // Find the game instance
+    const gameInstance = await ctx.db
+      .query("gameInstances")
+      .withIndex("by_code", (q) => q.eq("code", gameCode))
+      .first();
+
+    if (!gameInstance) {
+      throw new ConvexError("Game not found");
+    }
+
+    let participantId: string;
+    let participantName: string;
+    let participantType: "authenticated" | "guest";
+
+    if (userId && !guestName) {
+      // Authenticated user
+      const user = await ctx.db.get(userId);
+      if (!user) throw new ConvexError("User not found");
+
+      participantId = userId;
+      participantName = user.name || user.email || "Unknown User";
+      participantType = "authenticated";
+    } else if (guestName) {
+      // Guest user
+      participantId = `guest-${guestName}`;
+      participantName = guestName;
+      participantType = "guest";
+    } else {
+      throw new ConvexError("Must be authenticated or provide guest name");
+    }
+
+    // Find or create progress record and mark as completed
+    const existingProgress = await ctx.db
+      .query("gameProgress")
+      .withIndex("by_participant", (q) => q.eq("gameCode", gameCode).eq("participantId", participantId))
+      .first();
+
+    if (existingProgress) {
+      // Mark as exited/completed
+      await ctx.db.patch(existingProgress._id, {
+        isActive: false,
+        isCompleted: true,
+        lastUpdated: Date.now(),
+      });
+    } else {
+      // Create exit record
+      await ctx.db.insert("gameProgress", {
+        gameCode,
+        participantId,
+        participantName,
+        participantType,
+        questionsAnswered: 0,
+        totalQuestions: 0,
+        score: 0,
+        isActive: false,
+        isCompleted: true,
+        lastUpdated: Date.now(),
+      });
     }
 
     return { success: true };

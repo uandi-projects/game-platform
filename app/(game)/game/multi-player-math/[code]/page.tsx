@@ -30,6 +30,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
   const gameProgress = useQuery(api.games.getGameProgress, { gameCode });
   const updateGameProgress = useMutation(api.games.updateGameProgress);
   const completeGame = useMutation(api.games.completeGame);
+  const exitGame = useMutation(api.games.exitGame);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -55,28 +56,34 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     }
   }, [gameQuestions]);
 
-  // Auto-start the game when component loads
+  // Restore progress from database and check completion status
   useEffect(() => {
-    if (questions.length > 0 && !gameStarted) {
-      setGameStarted(true);
-    }
-  }, [questions.length, gameStarted]);
+    if (!gameProgress || !questions.length) return;
 
-  // Restore progress from database when component loads (debounced to prevent race conditions)
-  useEffect(() => {
-    if (!gameProgress || !questions.length || gameFinished) return;
+    // Find current user's progress record
+    const userProgress = gameProgress.find(progress => {
+      if (currentUser) {
+        return progress.participantId === currentUser._id;
+      } else {
+        return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
+      }
+    });
 
-    const timer = setTimeout(() => {
-      // Find current user's progress record
-      const userProgress = gameProgress.find(progress => {
-        if (currentUser) {
-          return progress.participantId === currentUser._id;
-        } else {
-          return progress.participantType === 'guest' && progress.participantName === (guestName || "Guest Player");
+    if (userProgress) {
+      // Check if game is already completed - MUST CHECK THIS FIRST
+      if (userProgress.isCompleted === true) {
+        if (!gameFinished) {
+          setScore(userProgress.score);
+          setGameFinished(true);
         }
-      });
+        if (!gameStarted) {
+          setGameStarted(true);
+        }
+        return;
+      }
 
-      if (userProgress && userProgress.questionsAnswered > 0) {
+      // Restore progress if exists
+      if (userProgress.questionsAnswered > 0 && !gameStarted) {
         // Only restore if we haven't already answered more questions locally
         if (userProgress.questionsAnswered > currentQuestionIndex) {
           setCurrentQuestionIndex(userProgress.questionsAnswered);
@@ -92,13 +99,15 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         }
 
         // Set game as started if progress exists
-        if (!gameStarted) {
-          setGameStarted(true);
-        }
+        setGameStarted(true);
+      } else if (!gameStarted && !gameFinished) {
+        // No progress yet, auto-start the game
+        setGameStarted(true);
       }
-    }, 100); // Small debounce to prevent rapid state updates
-
-    return () => clearTimeout(timer);
+    } else if (!gameStarted && !gameFinished) {
+      // No progress record, auto-start the game
+      setGameStarted(true);
+    }
   }, [gameProgress, currentUser, questions.length, guestName, gameStarted, currentQuestionIndex, gameFinished]);
 
   // Update progress in database
@@ -255,20 +264,8 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
               <div className="text-2xl font-semibold mt-2">{percentage}%</div>
             </div>
 
-            {/* Leaderboard placeholder */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-center">Final Leaderboard:</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 rounded bg-yellow-50 border border-yellow-200">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-yellow-600">1.</span>
-                    <span className="font-semibold">{currentUser?.name || "You"}</span>
-                  </div>
-                  <span className="font-bold">{score}/10</span>
-                </div>
-                {/* Note: In a real implementation, you'd show other players' scores */}
-              </div>
-            </div>
+            {/* Final Leaderboard */}
+            <LiveLeaderboard gameCode={gameCode} />
 
             {userAnswers.length > 0 ? (
               <div className="space-y-2">
@@ -346,7 +343,13 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => router.push('/dashboard')}
+              onClick={async () => {
+                await exitGame({
+                  gameCode,
+                  guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+                });
+                router.push('/dashboard');
+              }}
               className="flex items-center gap-2"
             >
               <LogOut className="h-4 w-4" />
