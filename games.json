@@ -41,6 +41,17 @@
       "isCustom": true,
       "ogTitle": "Custom Math Race - Multiplayer",
       "ogDescription": "Create custom multiplayer math races with your own rules and settings."
+    },
+    {
+      "id": "ai-mcq-quiz",
+      "name": "AI MCQ Quiz",
+      "type": "multiplayer",
+      "description": "AI-generated multiple-choice quiz on any topic",
+      "showTimer": true,
+      "maxTime": 300,
+      "isCustom": true,
+      "ogTitle": "AI MCQ Quiz - Multiplayer",
+      "ogDescription": "Create AI-generated multiple-choice quizzes on any topic with custom difficulty levels."
     }
   ]
 }

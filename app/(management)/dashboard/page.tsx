@@ -159,7 +159,7 @@ export default function DashboardPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableGames.map((game) => (
+                {availableGames.map((game: any) => (
                   <GameCard
                     key={game.id}
                     game={game}
@@ -256,13 +256,14 @@ export default function DashboardPage() {
               <CardContent className="p-6">
                 {recentActivity && recentActivity.length > 0 ? (
                   <div className="space-y-4">
-                    {recentActivity.slice(0, 5).map((activity, index) => {
+                    {recentActivity.slice(0, 5).map((activity: any, index: number) => {
                       const formatGameName = (gameId: string | undefined) => {
                         const gameNames: Record<string, string> = {
                           'single-player-math': 'Math Quiz Solo',
                           'multi-player-math': 'Math Race',
                           'custom-math-quiz': 'Custom Math Quiz',
-                          'custom-math-race': 'Custom Math Race'
+                          'custom-math-race': 'Custom Math Race',
+                          'ai-mcq-quiz': 'AI MCQ Quiz'
                         };
                         return gameNames[gameId || ''] || 'Unknown Game';
                       };

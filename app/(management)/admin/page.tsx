@@ -150,7 +150,7 @@ export default function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allUsers.map((user) => (
+                {allUsers.map((user: any) => (
                   <TableRow key={user._id}>
                     <TableCell>
                       <div className="flex items-center">
@@ -174,8 +174,8 @@ export default function AdminPage() {
                     <TableCell>
                       {editingUser?.id === user._id ? (
                         <Select
-                          value={editingUser.role}
-                          onValueChange={(value) => setEditingUser({ ...editingUser, role: value as "admin" | "teacher" | "student" })}
+                          value={editingUser?.role}
+                          onValueChange={(value) => editingUser && setEditingUser({ ...editingUser, role: value as "admin" | "teacher" | "student" })}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -204,7 +204,7 @@ export default function AdminPage() {
                         <div className="flex justify-end gap-2">
                           <Button
                             size="sm"
-                            onClick={() => handleRoleUpdate(user._id, editingUser.role)}
+                            onClick={() => editingUser && handleRoleUpdate(user._id, editingUser.role)}
                             disabled={loading[user._id]}
                           >
                             {loading[user._id] ? "Saving..." : "Save"}
@@ -261,7 +261,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  {allUsers.filter(u => u.role === "admin").length}
+                  {allUsers.filter((u: any) => u.role === "admin").length}
                 </div>
               </CardContent>
             </Card>
@@ -271,7 +271,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {allUsers.filter(u => u.role === "teacher").length}
+                  {allUsers.filter((u: any) => u.role === "teacher").length}
                 </div>
               </CardContent>
             </Card>

@@ -24,7 +24,7 @@ export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveL
   }
 
   // Convert progress records to participant format
-  const participantsWithProgress = gameProgress.map((progressRecord) => {
+  const participantsWithProgress = gameProgress.map((progressRecord: any) => {
     const isCurrentUser =
       (progressRecord.participantType === 'authenticated' && progressRecord.participantId === currentUser?._id) ||
       (progressRecord.participantType === 'guest');
@@ -42,7 +42,7 @@ export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveL
   });
 
   // Sort by progress (questions answered) descending, then by score
-  const sortedParticipants = participantsWithProgress.sort((a, b) => {
+  const sortedParticipants = participantsWithProgress.sort((a: any, b: any) => {
     if (b.questionsAnswered !== a.questionsAnswered) {
       return b.questionsAnswered - a.questionsAnswered;
     }
@@ -59,7 +59,7 @@ export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveL
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {sortedParticipants.map((participant, index) => {
+          {sortedParticipants.map((participant: any, index: number) => {
             const isCurrentUser =
               (participant.type === 'authenticated' && participant.id === currentUser?._id);
 

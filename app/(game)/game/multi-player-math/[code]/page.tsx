@@ -61,7 +61,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     if (!gameProgress || !questions.length) return;
 
     // Find current user's progress record
-    const userProgress = gameProgress.find(progress => {
+    const userProgress = gameProgress.find((progress: any) => {
       if (currentUser) {
         return progress.participantId === currentUser._id;
       } else {

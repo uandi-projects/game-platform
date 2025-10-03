@@ -11,9 +11,10 @@ import * as singlePlayerMath from "./gameTypes/single_player_math";
 import * as multiPlayerMath from "./gameTypes/multi_player_math";
 import * as customMathQuiz from "./gameTypes/custom_math_quiz";
 import * as customMathRace from "./gameTypes/custom_math_race";
+import * as aiMcqQuiz from "./gameTypes/ai_mcq_quiz";
 
 // Function to generate questions based on game type
-function generateQuestionsForGame(gameId: string, customConfig?: any) {
+async function generateQuestionsForGame(gameId: string, customConfig?: any) {
   switch (gameId) {
     case "single-player-math":
       return singlePlayerMath.generateQuestions(customConfig);
@@ -23,6 +24,8 @@ function generateQuestionsForGame(gameId: string, customConfig?: any) {
       return customMathQuiz.generateQuestions(customConfig);
     case "custom-math-race":
       return customMathRace.generateQuestions(customConfig);
+    case "ai-mcq-quiz":
+      return await aiMcqQuiz.generateQuestions(customConfig);
     default:
       return [];
   }
@@ -79,6 +82,15 @@ export const getAvailableGames = query({
           "description": "Create a custom math race with your own settings",
           "showTimer": true,
           "maxTime": 180,
+          "isCustom": true
+        },
+        {
+          "id": "ai-mcq-quiz",
+          "name": "AI MCQ Quiz",
+          "type": "multiplayer",
+          "description": "AI-powered multiple choice quiz on any topic with customizable difficulty",
+          "showTimer": true,
+          "maxTime": 600,
           "isCustom": true
         }
       ]
@@ -141,6 +153,15 @@ export const createGameInstance = mutation({
           "showTimer": true,
           "maxTime": 180,
           "isCustom": true
+        },
+        {
+          "id": "ai-mcq-quiz",
+          "name": "AI MCQ Quiz",
+          "type": "multiplayer",
+          "description": "AI-powered multiple choice quiz on any topic with customizable difficulty",
+          "showTimer": true,
+          "maxTime": 600,
+          "isCustom": true
         }
       ]
     };
@@ -151,7 +172,7 @@ export const createGameInstance = mutation({
     }
 
     // Generate questions for this game
-    const questions = generateQuestionsForGame(gameId, customConfig);
+    const questions = await generateQuestionsForGame(gameId, customConfig);
 
     // Generate a unique game code
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();

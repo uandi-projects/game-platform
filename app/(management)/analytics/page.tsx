@@ -334,7 +334,7 @@ export default function AnalyticsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {topStudents.map((student, index) => (
+                      {topStudents.map((student: any, index: number) => (
                         <TableRow key={student.participantId}>
                           <TableCell className="font-medium">
                             {index + 1}

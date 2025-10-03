@@ -65,7 +65,8 @@ export default function HistoryPage() {
       'single-player-math': 'Math Quiz Solo',
       'multi-player-math': 'Math Race',
       'custom-math-quiz': 'Custom Math Quiz',
-      'custom-math-race': 'Custom Math Race'
+      'custom-math-race': 'Custom Math Race',
+      'ai-mcq-quiz': 'AI MCQ Quiz'
     };
     return gameNames[gameId || ''] || 'Unknown Game';
   };
@@ -87,9 +88,9 @@ export default function HistoryPage() {
   };
 
   // Calculate summary stats
-  const completedGames = gameHistory.filter(game => game.isCompleted);
-  const totalScore = completedGames.reduce((sum, game) => sum + game.score, 0);
-  const totalQuestions = completedGames.reduce((sum, game) => sum + game.questionsAnswered, 0);
+  const completedGames = gameHistory.filter((game: any) => game.isCompleted);
+  const totalScore = completedGames.reduce((sum: any, game: any) => sum + game.score, 0);
+  const totalQuestions = completedGames.reduce((sum: any, game: any) => sum + game.questionsAnswered, 0);
   const averageScore = completedGames.length > 0 ? Math.round((totalScore / completedGames.length)) : 0;
   const averageAccuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
 
@@ -186,7 +187,7 @@ export default function HistoryPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {gameHistory.map((game, index) => {
+                      {gameHistory.map((game: any, index: number) => {
                         const accuracy = game.questionsAnswered > 0 ? Math.round((game.score / game.questionsAnswered) * 100) : 0;
 
                         return (

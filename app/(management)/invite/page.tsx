@@ -277,7 +277,7 @@ export default function InvitePage() {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {invitableRoles.map((invitableRole) => (
+                    {invitableRoles.map((invitableRole: any) => (
                       <SelectItem key={invitableRole} value={invitableRole}>
                         {invitableRole.charAt(0).toUpperCase() + invitableRole.slice(1)}
                       </SelectItem>

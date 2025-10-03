@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
 import { Users, Crown, UserCircle, ExternalLink } from "lucide-react";
 import ShareRoomButton from "@/components/ShareRoomButton";
+import games from "../games.json";
 
 export default function GameRoomClient({ params }: { params: Promise<{ code: string }> }) {
   const { isAuthenticated } = useConvexAuth();
@@ -32,13 +33,53 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
   const [hasJoined, setHasJoined] = useState(false);
 
   // Check if current user has joined
-  const currentUserHasJoined = gameParticipants?.allParticipants?.some(
-    participant =>
+  const currentUserHasJoined = gameParticipants?.allParticipants?.some((participant: any) =>
       (participant?.type === 'authenticated' && participant?.id === currentUser?._id) ||
       (participant?.type === 'guest' && participant?.name === guestName && hasJoined)
   );
 
   const isHost = currentUser && gameInstance && currentUser._id === gameInstance.createdBy;
+
+  // Get game info from games.json
+  const gameInfo = games.games.find(game => game.id === gameInstance?.gameId);
+  const gameTitle = gameInstance?.customConfig?.quizTitle || gameInfo?.name || 'Game';
+
+  // Generate game description based on game type
+  const getGameDescription = () => {
+    if (gameInstance?.gameId === 'ai-mcq-quiz' && gameInstance?.customConfig) {
+      const { questionCount, timeLimit, difficultyLevel } = gameInstance.customConfig;
+      const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return secs === 0 ? `${mins} minutes` : `${mins}m ${secs}s`;
+      };
+      return [
+        `• ${questionCount || 10} AI-generated questions`,
+        `• ${formatTime(timeLimit || 300)} to complete`,
+        `• Difficulty level ${difficultyLevel || 10}/20`,
+        `• Race against other players!`
+      ];
+    } else if (gameInstance?.gameId === 'custom-math-race' && gameInstance?.customConfig) {
+      const { questionCount, timeLimit } = gameInstance.customConfig;
+      const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return secs === 0 ? `${mins} minutes` : `${mins}m ${secs}s`;
+      };
+      return [
+        `• ${questionCount || 10} math questions`,
+        `• ${formatTime(timeLimit || 180)} to complete`,
+        `• Addition and subtraction`,
+        `• Race against other players!`
+      ];
+    }
+    // Default
+    return [
+      `• 10 addition and subtraction questions`,
+      `• 3 minutes to complete`,
+      `• Race against other players!`
+    ];
+  };
 
   // Play bell sound and redirect when game starts
   useEffect(() => {
@@ -147,7 +188,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl mb-2">
-              {gameInstance.customConfig ? 'Custom Math Race' : 'Math Race'}
+              {gameTitle}
             </CardTitle>
             <p className="text-muted-foreground mb-4">
               Game Code: <span className="font-mono font-bold text-lg">{gameCode}</span>
@@ -165,9 +206,9 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
                 <span className="font-semibold">{gameParticipants?.allParticipants?.length || 0} Players Joined</span>
               </div>
               <div className="text-sm text-muted-foreground space-y-1">
-                <p>• 10 addition and subtraction questions</p>
-                <p>• 3 minutes to complete</p>
-                <p>• Race against other players!</p>
+                {getGameDescription().map((desc, index) => (
+                  <p key={index}>{desc}</p>
+                ))}
               </div>
             </div>
 
@@ -176,7 +217,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
               <h3 className="text-lg font-semibold mb-3 text-center">Players in Room:</h3>
               <div className="space-y-2">
                 {gameParticipants?.allParticipants && gameParticipants.allParticipants.length > 0 ? (
-                  gameParticipants.allParticipants.map((participant, index) => (
+                  gameParticipants.allParticipants.map((participant: any, index: number) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-muted rounded-lg"

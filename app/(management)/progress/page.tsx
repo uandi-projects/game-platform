@@ -234,7 +234,7 @@ export default function ProgressPage() {
             <CardContent>
               {achievements.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {achievements.map((achievement) => achievement && (
+                  {achievements.map((achievement: any) => achievement && (
                     <div
                       key={achievement.id}
                       className="flex items-center space-x-3 p-4 rounded-lg border bg-card"

@@ -114,13 +114,14 @@ function Content() {
           <CardContent>
             {recentActivity && recentActivity.length > 0 ? (
               <div className="space-y-4">
-                {recentActivity.slice(0, 3).map((activity, index) => {
+                {recentActivity.slice(0, 3).map((activity: any, index: number) => {
                   const formatGameName = (gameId: string | undefined) => {
                     const gameNames: Record<string, string> = {
                       'single-player-math': 'Math Quiz Solo',
                       'multi-player-math': 'Math Race',
                       'custom-math-quiz': 'Custom Math Quiz',
-                      'custom-math-race': 'Custom Math Race'
+                      'custom-math-race': 'Custom Math Race',
+                      'ai-mcq-quiz': 'AI MCQ Quiz'
                     };
                     return gameNames[gameId || ''] || 'Unknown Game';
                   };
