@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
 import { ThemeToggle, MobileThemeToggle } from "@/components/theme-toggle";
 import { Loader } from "@/components/ui/loader";
-import { Gamepad2, UserPlus, Settings, User, LogOut, Menu, LayoutDashboard } from "lucide-react";
+import { Gamepad2, UserPlus, Settings, User, LogOut, Menu, LayoutDashboard, MessageSquare } from "lucide-react";
 
 export default function Header() {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -34,6 +34,12 @@ export default function Header() {
               <Link href="/dashboard" className="flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" />
                 <span>Dashboard</span>
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/feedback" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span>Feedback</span>
               </Link>
             </Button>
             {(currentUser.role === "teacher" || currentUser.role === "admin") && (
@@ -136,6 +142,13 @@ export default function Header() {
                         <Link href="/profile" className="flex items-center gap-3">
                           <User className="h-5 w-5" />
                           <span>Profile</span>
+                        </Link>
+                      </Button>
+
+                      <Button asChild variant="ghost" className="w-full justify-start h-12" onClick={() => setIsOpen(false)}>
+                        <Link href="/feedback" className="flex items-center gap-3">
+                          <MessageSquare className="h-5 w-5" />
+                          <span>Feedback</span>
                         </Link>
                       </Button>
 

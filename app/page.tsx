@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import Header from "@/components/Header";
-import { Trophy, Calendar, ArrowRight } from "lucide-react";
+import { Trophy, Calendar, ArrowRight, MessageSquare } from "lucide-react";
 
 export default function Home() {
 
@@ -89,6 +89,12 @@ function Content() {
                     <Link href="/analytics">Analytics</Link>
                   </Button>
                 )}
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/feedback">
+                    <MessageSquare className="h-4 w-4 mr-2 inline" />
+                    Share Feedback
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -242,6 +248,16 @@ function Content() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Feedback Button */}
+      <div className="mt-8">
+        <Button variant="outline" size="lg" asChild>
+          <Link href="/feedback" className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Share Your Feedback
+          </Link>
+        </Button>
       </div>
     </div>
   );

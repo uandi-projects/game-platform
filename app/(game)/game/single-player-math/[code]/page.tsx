@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Loader } from "@/components/ui/loader";
-import { Trophy, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { Trophy, Clock, CheckCircle, XCircle, LogOut, MessageSquare } from "lucide-react";
 import { useGameFeedback } from "@/components/GameFeedback";
 
 interface Question {
@@ -333,6 +333,12 @@ export default function SinglePlayerMathGame({ params }: { params: Promise<{ cod
               </Button>
               <Button asChild variant="outline" className="flex-1">
                 <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button asChild variant="outline" className="flex-1">
+                <Link href="/feedback">
+                  <MessageSquare className="h-4 w-4 mr-2 inline" />
+                  Feedback
+                </Link>
               </Button>
             </div>
           </CardContent>

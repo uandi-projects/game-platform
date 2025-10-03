@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader } from "@/components/ui/loader";
-import { Clock, Users, LogOut, Brain } from "lucide-react";
+import { Clock, Users, LogOut, Brain, MessageSquare } from "lucide-react";
 import LiveLeaderboard from "../../../_components/LiveLeaderboard";
 import { useGameFeedback } from "@/components/GameFeedback";
 import { MCQQuestion, MCQQuestionData } from "@/components/mcq/MCQQuestion";
@@ -260,6 +260,12 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
             </Button>
             <Button asChild variant="outline" className="flex-1">
               <Link href="/dashboard">Dashboard</Link>
+            </Button>
+            <Button asChild variant="outline" className="flex-1">
+              <Link href="/feedback">
+                <MessageSquare className="h-4 w-4 mr-2 inline" />
+                Feedback
+              </Link>
             </Button>
           </div>
         </div>
