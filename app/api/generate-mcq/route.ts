@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Get API credentials from environment
     const apiKey = process.env.OPENROUTER_API_KEY;
-    const model = process.env.AI_MCQ_MODEL || "x-ai/grok-4-fast:free";
+    const model = process.env.AI_MCQ_MODEL || "deepseek/deepseek-chat-v3.1:free";
 
     console.log("[API] Using model:", model);
 

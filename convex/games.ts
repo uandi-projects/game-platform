@@ -37,12 +37,12 @@ export const getAvailableGames = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new ConvexError("Authentication required");
+      return null;
     }
 
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new ConvexError("User not found");
+      return null;
     }
 
     // Load games from JSON file
@@ -771,7 +771,15 @@ export const exitGame = mutation({
 export const getUserGameHistory = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      return null;
+    }
 
     // Get all game progress for this user
     const gameProgress = await ctx.db
