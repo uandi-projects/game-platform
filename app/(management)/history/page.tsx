@@ -88,7 +88,7 @@ export default function HistoryPage() {
   };
 
   // Calculate summary stats
-  const completedGames = gameHistory.filter((game: any) => game.isCompleted);
+  const completedGames = gameHistory?.filter((game: any) => game.isCompleted) || [];
   const totalScore = completedGames.reduce((sum: any, game: any) => sum + game.score, 0);
   const totalQuestions = completedGames.reduce((sum: any, game: any) => sum + game.questionsAnswered, 0);
   const averageScore = completedGames.length > 0 ? Math.round((totalScore / completedGames.length)) : 0;
@@ -119,7 +119,7 @@ export default function HistoryPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Games Played</p>
-                    <p className="text-2xl font-bold">{gameHistory.length}</p>
+                    <p className="text-2xl font-bold">{gameHistory?.length || 0}</p>
                   </div>
                   <Gamepad2 className="h-8 w-8 text-muted-foreground" />
                 </div>
@@ -172,7 +172,7 @@ export default function HistoryPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {gameHistory.length > 0 ? (
+              {gameHistory && gameHistory.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
