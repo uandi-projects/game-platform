@@ -40,7 +40,8 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
   const [gameFinished, setGameFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(180); // Default 3 minutes
   const [score, setScore] = useState(0);
-  const [guestName] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [guestId, setGuestId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Game feedback
@@ -48,6 +49,22 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
     currentUser?.soundFeedback ?? true,
     currentUser?.hapticFeedback ?? true
   );
+
+  // Load guest name from localStorage if not authenticated
+  useEffect(() => {
+    if (!currentUser) {
+      const savedGuestData = localStorage.getItem(`guest_${gameCode}`);
+      if (savedGuestData) {
+        try {
+          const { name, guestId } = JSON.parse(savedGuestData);
+          setGuestName(name);
+          setGuestId(guestId);
+        } catch (e) {
+          console.error("Failed to parse guest data:", e);
+        }
+      }
+    }
+  }, [currentUser, gameCode]);
 
   // Get custom config from game instance
   const customConfig = gameInstance?.customConfig as { timeLimit: number; questionCount: number } | undefined;
@@ -112,7 +129,7 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
       // No progress record, auto-start the game
       setGameStarted(true);
     }
-  }, [gameProgress, currentUser, questions.length, guestName, gameStarted, gameFinished]);
+  }, [gameProgress, currentUser, questions.length, guestName, guestId, gameStarted, gameFinished]);
 
   // Update progress in database
   useEffect(() => {
@@ -124,9 +141,10 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
         totalQuestions: questions.length,
         score: score,
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       }).catch(console.error);
     }
-  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
+  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, guestId, updateGameProgress, score]);
 
   const calculateFinalScore = useCallback(async (answers: number[]) => {
     let correctAnswers = 0;
@@ -145,13 +163,14 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
         totalQuestions: questions.length,
         completedAt: Date.now(),
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       });
     } catch (error) {
       console.error("Failed to mark game as completed:", error);
     }
 
     return correctAnswers;
-  }, [questions, completeGame, gameCode, currentUser, guestName]);
+  }, [questions, completeGame, gameCode, currentUser, guestName, guestId]);
 
   // Timer logic - synchronized with game start time
   useEffect(() => {
@@ -200,6 +219,7 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
         totalQuestions: questions.length,
         score: currentScore,
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       });
     } catch (error) {
       console.error("Failed to save progress:", error);
@@ -357,6 +377,7 @@ export default function CustomMathRace({ params }: { params: Promise<{ code: str
                 await exitGame({
                   gameCode,
                   guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+                  guestId: !currentUser ? guestId || undefined : undefined,
                 });
                 router.push('/dashboard');
               }}

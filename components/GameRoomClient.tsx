@@ -29,13 +29,35 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
   const startMultiplayerGame = useMutation(api.games.startMultiplayerGame);
 
   const [guestName, setGuestName] = useState("");
+  const [guestId, setGuestId] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+
+  // Load saved guest name from localStorage on mount
+  useEffect(() => {
+    const savedGuestData = localStorage.getItem(`guest_${gameCode}`);
+    if (savedGuestData) {
+      try {
+        const { name, guestId, joinedAt } = JSON.parse(savedGuestData);
+        // Only restore if joined within last 24 hours
+        if (Date.now() - joinedAt < 24 * 60 * 60 * 1000) {
+          setGuestName(name);
+          setGuestId(guestId);
+          setHasJoined(true);
+        } else {
+          // Clean up old data
+          localStorage.removeItem(`guest_${gameCode}`);
+        }
+      } catch (e) {
+        console.error("Failed to parse guest data:", e);
+      }
+    }
+  }, [gameCode]);
 
   // Check if current user has joined
   const currentUserHasJoined = gameParticipants?.allParticipants?.some((participant: any) =>
       (participant?.type === 'authenticated' && participant?.id === currentUser?._id) ||
-      (participant?.type === 'guest' && participant?.name === guestName && hasJoined)
+      (participant?.type === 'guest' && participant?.id === `guest-${guestId}` && hasJoined)
   );
 
   const isHost = currentUser && gameInstance && currentUser._id === gameInstance.createdBy;
@@ -165,8 +187,18 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
 
     setIsJoining(true);
     try {
-      await joinGameAsGuest({ code: gameCode, guestName: guestName.trim() });
+      const result = await joinGameAsGuest({ code: gameCode, guestName: guestName.trim() });
+      const returnedGuestId = (result as any).guestId;
+
+      setGuestId(returnedGuestId);
       setHasJoined(true);
+
+      // Save guest name + guestId + game code to localStorage
+      localStorage.setItem(`guest_${gameCode}`, JSON.stringify({
+        name: guestName.trim(),
+        guestId: returnedGuestId,
+        joinedAt: Date.now()
+      }));
     } catch (error) {
       console.error("Error joining as guest:", error);
     } finally {
@@ -229,7 +261,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
                           <UserCircle className="h-5 w-5 text-gray-500" />
                         )}
                         <span className="font-medium">
-                          {participant?.name || 'Unknown Player'}
+                          {participant?.displayName || participant?.name || 'Unknown Player'}
                         </span>
                         {participant?.id === gameInstance.createdBy && (
                           <Badge variant="secondary" className="text-xs">

@@ -40,7 +40,8 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
   const [gameFinished, setGameFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
   const [score, setScore] = useState(0);
-  const [guestName] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [guestId, setGuestId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Game feedback
@@ -48,6 +49,22 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
     currentUser?.soundFeedback ?? true,
     currentUser?.hapticFeedback ?? true
   );
+
+  // Load guest name and ID from localStorage if not authenticated
+  useEffect(() => {
+    if (!currentUser) {
+      const savedGuestData = localStorage.getItem(`guest_${gameCode}`);
+      if (savedGuestData) {
+        try {
+          const { name, guestId } = JSON.parse(savedGuestData);
+          setGuestName(name);
+          setGuestId(guestId);
+        } catch (e) {
+          console.error("Failed to parse guest data:", e);
+        }
+      }
+    }
+  }, [currentUser, gameCode]);
 
   // Load questions from the database
   useEffect(() => {
@@ -120,9 +137,10 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         totalQuestions: questions.length,
         score: score,
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       }).catch(console.error);
     }
-  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
+  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, guestId, updateGameProgress, score]);
 
   const calculateFinalScore = useCallback(async (answers: number[]) => {
     let correctAnswers = 0;
@@ -141,13 +159,14 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
         totalQuestions: questions.length,
         completedAt: Date.now(),
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       });
     } catch (error) {
       console.error("Failed to mark game as completed:", error);
     }
 
     return correctAnswers;
-  }, [questions, completeGame, gameCode, currentUser, guestName]);
+  }, [questions, completeGame, gameCode, currentUser, guestName, guestId]);
 
   // Timer logic - synchronized with game start time
   useEffect(() => {
@@ -353,6 +372,7 @@ export default function MultiPlayerMathGame({ params }: { params: Promise<{ code
                 await exitGame({
                   gameCode,
                   guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+                  guestId: !currentUser ? guestId || undefined : undefined,
                 });
                 router.push('/dashboard');
               }}

@@ -43,6 +43,7 @@ const schema = defineSchema({
     participants: v.array(v.id("users")),
     guestParticipants: v.optional(v.array(v.object({
       name: v.string(),
+      guestId: v.optional(v.string()), // Optional for backward compatibility
       joinedAt: v.number(),
     }))),
     creatorParticipating: v.optional(v.boolean()),

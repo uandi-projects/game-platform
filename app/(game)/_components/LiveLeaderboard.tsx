@@ -5,6 +5,7 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Crown, UserCircle, Target } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface LiveLeaderboardProps {
   gameCode: string;
@@ -18,6 +19,22 @@ interface LiveLeaderboardProps {
 export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveLeaderboardProps) {
   const gameProgress = useQuery(api.games.getGameProgress, { gameCode });
   const currentUser = useQuery(api.users.getCurrentUser);
+  const [guestId, setGuestId] = useState<string | null>(null);
+
+  // Load guest ID from localStorage if user is not authenticated
+  useEffect(() => {
+    if (!currentUser) {
+      const savedGuestData = localStorage.getItem(`guest_${gameCode}`);
+      if (savedGuestData) {
+        try {
+          const { guestId } = JSON.parse(savedGuestData);
+          setGuestId(guestId);
+        } catch (e) {
+          console.error("Failed to parse guest data:", e);
+        }
+      }
+    }
+  }, [currentUser, gameCode]);
 
   if (!gameProgress) {
     return null;
@@ -25,10 +42,6 @@ export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveL
 
   // Convert progress records to participant format
   const participantsWithProgress = gameProgress.map((progressRecord: any) => {
-    const isCurrentUser =
-      (progressRecord.participantType === 'authenticated' && progressRecord.participantId === currentUser?._id) ||
-      (progressRecord.participantType === 'guest');
-
     return {
       id: progressRecord.participantId,
       name: progressRecord.participantName,
@@ -61,7 +74,8 @@ export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveL
         <div className="space-y-3">
           {sortedParticipants.map((participant: any, index: number) => {
             const isCurrentUser =
-              (participant.type === 'authenticated' && participant.id === currentUser?._id);
+              (participant.type === 'authenticated' && participant.id === currentUser?._id) ||
+              (participant.type === 'guest' && participant.id === `guest-${guestId}`);
 
             // Calculate proper ranking position with ties
             let position = 1;
@@ -120,7 +134,9 @@ export default function LiveLeaderboard({ gameCode, currentUserProgress }: LiveL
                     )}
                     <div className="min-w-0 flex-1">
                       <span className="font-medium truncate block">
-                        {participant.name}
+                        {participant.type === 'guest' && participant.id.startsWith('guest-')
+                          ? `${participant.name} #${participant.id.replace('guest-', '')}`
+                          : participant.name}
                         {isCurrentUser && <span className="text-xs ml-1">(You)</span>}
                       </span>
                       {participant.isHost && (

@@ -36,13 +36,30 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
   const [gameFinished, setGameFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // Default 5 minutes, will be updated from config
   const [score, setScore] = useState(0);
-  const [guestName] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [guestId, setGuestId] = useState<string | null>(null);
 
   // Game feedback
   const { triggerFeedback } = useGameFeedback(
     currentUser?.soundFeedback ?? true,
     currentUser?.hapticFeedback ?? true
   );
+
+  // Load guest name from localStorage if not authenticated
+  useEffect(() => {
+    if (!currentUser) {
+      const savedGuestData = localStorage.getItem(`guest_${gameCode}`);
+      if (savedGuestData) {
+        try {
+          const { name, guestId } = JSON.parse(savedGuestData);
+          setGuestName(name);
+          setGuestId(guestId);
+        } catch (e) {
+          console.error("Failed to parse guest data:", e);
+        }
+      }
+    }
+  }, [currentUser, gameCode]);
 
   // Set time limit from game instance config
   useEffect(() => {
@@ -100,7 +117,7 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
     } else if (!gameStarted && !gameFinished) {
       setGameStarted(true);
     }
-  }, [gameProgress, currentUser, questions.length, guestName, gameStarted, currentQuestionIndex, gameFinished]);
+  }, [gameProgress, currentUser, questions.length, guestName, guestId, gameStarted, currentQuestionIndex, gameFinished]);
 
   // Update progress in database
   useEffect(() => {
@@ -111,9 +128,10 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
         totalQuestions: questions.length,
         score: score,
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       }).catch(console.error);
     }
-  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, updateGameProgress, score]);
+  }, [currentQuestionIndex, gameStarted, questions, gameCode, currentUser, guestName, guestId, updateGameProgress, score]);
 
   const calculateFinalScore = useCallback(
     async (answers: (number | null)[]) => {
@@ -132,6 +150,7 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
           totalQuestions: questions.length,
           completedAt: Date.now(),
           guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+          guestId: !currentUser ? guestId || undefined : undefined,
         });
       } catch (error) {
         console.error("Failed to mark game as completed:", error);
@@ -139,7 +158,7 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
 
       return correctAnswers;
     },
-    [questions, completeGame, gameCode, currentUser, guestName]
+    [questions, completeGame, gameCode, currentUser, guestName, guestId]
   );
 
   // Timer logic
@@ -190,6 +209,7 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
         totalQuestions: questions.length,
         score: currentScore,
         guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+        guestId: !currentUser ? guestId || undefined : undefined,
       });
     } catch (error) {
       console.error("Failed to save progress:", error);
@@ -309,6 +329,7 @@ export default function AIMCQQuizGame({ params }: { params: Promise<{ code: stri
                 await exitGame({
                   gameCode,
                   guestName: !currentUser ? (guestName || "Guest Player") : undefined,
+                  guestId: !currentUser ? guestId || undefined : undefined,
                 });
                 router.push("/dashboard");
               }}

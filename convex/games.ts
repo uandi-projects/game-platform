@@ -364,13 +364,12 @@ export const joinGameAsGuest = mutation({
     // In a real implementation, you might want to create temporary user records
     const currentGuests = gameInstance.guestParticipants || [];
 
-    // Check if guest name already exists
-    if (currentGuests.some(guest => guest.name === guestName)) {
-      throw new ConvexError("A player with this name has already joined");
-    }
+    // Generate a unique ID for the guest (4-character random string)
+    const guestId = Math.random().toString(36).substring(2, 6).toUpperCase();
 
     const newGuest = {
       name: guestName,
+      guestId: guestId,
       joinedAt: Date.now(),
     };
 
@@ -378,7 +377,12 @@ export const joinGameAsGuest = mutation({
       guestParticipants: [...currentGuests, newGuest],
     });
 
-    return await ctx.db.get(gameInstance._id);
+    const updatedInstance = await ctx.db.get(gameInstance._id);
+
+    return {
+      ...updatedInstance,
+      guestId: guestId, // Return the generated guestId
+    };
   },
 });
 
@@ -411,9 +415,10 @@ export const getGameParticipants = query({
     );
 
     // Get guest participants
-    const guestParticipants = (gameInstance.guestParticipants || []).map((guest, index) => ({
-      id: `guest-${index}`,
+    const guestParticipants = (gameInstance.guestParticipants || []).map((guest) => ({
+      id: `guest-${guest.guestId || guest.name}`, // Use guestId if available, fallback to name for old data
       name: guest.name,
+      displayName: guest.guestId ? `${guest.name} #${guest.guestId}` : guest.name,
       type: 'guest' as const,
       isHost: false,
     }));
@@ -507,8 +512,9 @@ export const updateGameProgress = mutation({
     totalQuestions: v.number(),
     score: v.number(),
     guestName: v.optional(v.string()), // For guest users
+    guestId: v.optional(v.string()), // For guest users
   },
-  handler: async (ctx, { gameCode, questionsAnswered, totalQuestions, score, guestName }) => {
+  handler: async (ctx, { gameCode, questionsAnswered, totalQuestions, score, guestName, guestId }) => {
     const userId = await getAuthUserId(ctx);
 
     let participantId: string;
@@ -525,7 +531,7 @@ export const updateGameProgress = mutation({
       participantType = "authenticated";
     } else if (guestName) {
       // Guest user
-      participantId = `guest-${guestName}`;
+      participantId = `guest-${guestId || guestName}`; // Use guestId if available
       participantName = guestName;
       participantType = "guest";
     } else {
@@ -597,8 +603,9 @@ export const completeGame = mutation({
     totalQuestions: v.number(),
     completedAt: v.number(),
     guestName: v.optional(v.string()),
+    guestId: v.optional(v.string()),
   },
-  handler: async (ctx, { gameCode, finalScore, totalQuestions, completedAt, guestName }) => {
+  handler: async (ctx, { gameCode, finalScore, totalQuestions, completedAt, guestName, guestId }) => {
     const userId = await getAuthUserId(ctx);
 
     // Find the game instance
@@ -625,7 +632,7 @@ export const completeGame = mutation({
       participantType = "authenticated";
     } else if (guestName) {
       // Guest user
-      participantId = `guest-${guestName}`;
+      participantId = `guest-${guestId || guestName}`;
       participantName = guestName;
       participantType = "guest";
     } else {
@@ -699,8 +706,9 @@ export const exitGame = mutation({
   args: {
     gameCode: v.string(),
     guestName: v.optional(v.string()),
+    guestId: v.optional(v.string()),
   },
-  handler: async (ctx, { gameCode, guestName }) => {
+  handler: async (ctx, { gameCode, guestName, guestId }) => {
     const userId = await getAuthUserId(ctx);
 
     // Find the game instance
@@ -727,7 +735,7 @@ export const exitGame = mutation({
       participantType = "authenticated";
     } else if (guestName) {
       // Guest user
-      participantId = `guest-${guestName}`;
+      participantId = `guest-${guestId || guestName}`;
       participantName = guestName;
       participantType = "guest";
     } else {
