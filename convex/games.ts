@@ -584,8 +584,8 @@ export const getGameProgress = query({
       .collect();
 
     // Sort by progress (questions answered) descending, then by score
+    // Show all participants (both active and completed) for real-time leaderboard
     return progressRecords
-      .filter(record => record.isActive)
       .sort((a, b) => {
         if (b.questionsAnswered !== a.questionsAnswered) {
           return b.questionsAnswered - a.questionsAnswered;
