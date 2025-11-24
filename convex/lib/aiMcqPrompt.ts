@@ -44,7 +44,8 @@ export function getDifficultyDescription(level: number): string {
 export function generateUserPrompt(
   aiPrompt: string,
   difficultyLevel: number,
-  questionCount: number
+  questionCount: number,
+  language: string = "English"
 ): string {
   const difficultyDesc = getDifficultyDescription(difficultyLevel);
 
@@ -54,6 +55,8 @@ User Instructions: ${aiPrompt}
 
 Difficulty level context: This is ${difficultyDesc}
 
+Language Requirement: The questions and answers MUST be in ${language}. However, the JSON keys (question, options, correctAnswer) MUST remain in English.
+
 Requirements for each question:
 - Must have exactly 4 answer options (A, B, C, D)
 - Only ONE option should be correct
@@ -61,6 +64,7 @@ Requirements for each question:
 - Questions can include LaTeX math notation using $ or $$ delimiters
 - Questions should test understanding, not just recall
 - Follow the user's instructions about what content to cover
+- Ensure the content is in ${language}
 
 Return ONLY valid JSON in this EXACT format (no additional text):
 {
