@@ -10,6 +10,7 @@ export interface MCQQuestionData {
   id: number;
   question: string;
   options: string[];
+  optionDescriptions?: string[];
   correctAnswer: number;
 }
 
@@ -81,13 +82,12 @@ export function MCQQuestion({
                   onClick={() => onAnswerSelect(index)}
                   disabled={disabled}
                   variant={isSelected ? "default" : "outline"}
-                  className={`w-full justify-start text-left h-auto py-4 px-4 ${
-                    showCorrect
+                  className={`w-full justify-start text-left h-auto py-4 px-4 ${showCorrect
                       ? "bg-green-100 border-green-500 text-green-900 hover:bg-green-100"
                       : showIncorrect
-                      ? "bg-red-100 border-red-500 text-red-900 hover:bg-red-100"
-                      : ""
-                  }`}
+                        ? "bg-red-100 border-red-500 text-red-900 hover:bg-red-100"
+                        : ""
+                    }`}
                 >
                   <div className="flex items-center gap-3 w-full">
                     <span className="font-bold min-w-[24px]">{optionLabels[index]}.</span>

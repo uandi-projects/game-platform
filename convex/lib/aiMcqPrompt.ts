@@ -77,10 +77,17 @@ Return ONLY valid JSON in this EXACT format (no additional text):
         "Option C text (can include $LaTeX$)",
         "Option D text (can include $LaTeX$)"
       ],
+      "optionDescriptions": [
+        "Explanation for why Option A is correct or incorrect",
+        "Explanation for why Option B is correct or incorrect",
+        "Explanation for why Option C is correct or incorrect",
+        "Explanation for why Option D is correct or incorrect"
+      ],
       "correctAnswer": 0
     }
   ]
 }
 
-The "correctAnswer" field must be an integer from 0-3 (0 for A, 1 for B, 2 for C, 3 for D).`;
+The "correctAnswer" field must be an integer from 0-3 (0 for A, 1 for B, 2 for C, 3 for D).
+The "optionDescriptions" field must be an array of exactly 4 strings, corresponding to each option. Provide a brief explanation for each option, stating why it is correct or incorrect. Ensure these explanations are in ${language}.`;
 }
