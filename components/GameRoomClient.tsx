@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
-import { Users, Crown, UserCircle, ExternalLink } from "lucide-react";
+import { Users, Crown, UserCircle, ExternalLink, Globe } from "lucide-react";
 import ShareRoomButton from "@/components/ShareRoomButton";
 import games from "../games.json";
 
@@ -56,8 +56,8 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
 
   // Check if current user has joined
   const currentUserHasJoined = gameParticipants?.allParticipants?.some((participant: any) =>
-      (participant?.type === 'authenticated' && participant?.id === currentUser?._id) ||
-      (participant?.type === 'guest' && participant?.id === `guest-${guestId}` && hasJoined)
+    (participant?.type === 'authenticated' && participant?.id === currentUser?._id) ||
+    (participant?.type === 'guest' && participant?.id === `guest-${guestId}` && hasJoined)
   );
 
   const isHost = currentUser && gameInstance && currentUser._id === gameInstance.createdBy;
@@ -79,7 +79,7 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
         `• ${questionCount || 10} AI-generated questions`,
         `• ${formatTime(timeLimit || 300)} to complete`,
         `• Difficulty level ${difficultyLevel || 10}/20`,
-        `• Race against other players!`
+        `• Race against other players!`,
       ];
     } else if (gameInstance?.gameId === 'custom-math-race' && gameInstance?.customConfig) {
       const { questionCount, timeLimit } = gameInstance.customConfig;
@@ -225,8 +225,14 @@ export default function GameRoomClient({ params }: { params: Promise<{ code: str
             <p className="text-muted-foreground mb-4">
               Game Code: <span className="font-mono font-bold text-lg">{gameCode}</span>
             </p>
-            <div className="flex justify-center">
+            <div className="flex justify-center flex-col items-center gap-2">
               <ShareRoomButton gameCode={gameCode} />
+              {gameInstance?.customConfig?.language && gameInstance.customConfig.language !== "English" && (
+                <Badge variant="outline" className="mt-2">
+                  <Globe className="h-3 w-3 mr-1" />
+                  Language: {gameInstance.customConfig.language}
+                </Badge>
+              )}
             </div>
           </CardHeader>
 
