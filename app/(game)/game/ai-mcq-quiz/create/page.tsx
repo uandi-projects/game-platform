@@ -11,8 +11,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Loader } from "@/components/ui/loader";
-import { Brain, Sparkles, AlertCircle, Clock, Hash } from "lucide-react";
+import { Brain, Sparkles, AlertCircle, Clock, Hash, Globe } from "lucide-react";
 import Link from "next/link";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const LANGUAGES = [
+  { value: "English", label: "English" },
+  { value: "Hindi", label: "Hindi" },
+  { value: "Tamil", label: "Tamil" },
+  { value: "Telugu", label: "Telugu" },
+  { value: "Kannada", label: "Kannada" },
+  { value: "Malayalam", label: "Malayalam" },
+  { value: "Bengali", label: "Bengali" },
+  { value: "Marathi", label: "Marathi" },
+  { value: "Gujarati", label: "Gujarati" },
+  { value: "Punjabi", label: "Punjabi" },
+  { value: "Urdu", label: "Urdu" },
+];
 
 const DIFFICULTY_DESCRIPTIONS: Record<number, string> = {
   1: "1st Grade",
@@ -46,6 +67,7 @@ export default function CreateAIMCQQuiz() {
   const [difficultyLevel, setDifficultyLevel] = useState([10]); // Default to 10th grade
   const [questionCount, setQuestionCount] = useState([10]); // Default to 10 questions
   const [timeLimit, setTimeLimit] = useState([300]); // Default to 5 minutes total
+  const [language, setLanguage] = useState("English");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +93,7 @@ export default function CreateAIMCQQuiz() {
 
     try {
       console.log("Step 1: Generating questions via API endpoint...");
-      console.log("Request:", { quizTitle: quizTitle.trim(), aiPrompt: aiPrompt.trim(), difficultyLevel: difficultyLevel[0], questionCount: questionCount[0] });
+      console.log("Request:", { quizTitle: quizTitle.trim(), aiPrompt: aiPrompt.trim(), difficultyLevel: difficultyLevel[0], questionCount: questionCount[0], language });
 
       // Step 1: Generate questions via API endpoint
       const generateResponse = await fetch("/api/generate-mcq", {
@@ -81,6 +103,7 @@ export default function CreateAIMCQQuiz() {
           aiPrompt: aiPrompt.trim(),
           difficultyLevel: difficultyLevel[0],
           questionCount: questionCount[0],
+          language,
         }),
       });
 
@@ -101,11 +124,9 @@ export default function CreateAIMCQQuiz() {
       const result = await createGameInstance({
         gameId: "ai-mcq-quiz",
         customConfig: {
-          quizTitle: quizTitle.trim(),
-          aiPrompt: aiPrompt.trim(),
-          difficultyLevel: difficultyLevel[0],
           questionCount: questionCount[0],
           timeLimit: timeLimit[0],
+          language,
           questions, // Include the AI-generated questions
         },
       });
@@ -204,6 +225,26 @@ export default function CreateAIMCQQuiz() {
               </p>
             </div>
 
+            {/* Language Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="language">Language</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.value} value={lang.value}>
+                      {lang.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Select the language for the questions and answers.
+              </p>
+            </div>
+
             {/* Difficulty Level Slider */}
             <div className="space-y-4">
               <div>
@@ -276,6 +317,7 @@ export default function CreateAIMCQQuiz() {
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Questions are generated based on your topic and difficulty level</li>
                 <li>• Supports LaTeX formatting for mathematical expressions</li>
+                <li>• Available in multiple Indian languages</li>
                 <li>• Each question has 4 options with only one correct answer</li>
                 <li>• This is a multiplayer game - invite friends to compete!</li>
               </ul>

@@ -19,9 +19,9 @@ interface AIResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    const { aiPrompt, difficultyLevel, questionCount } = await request.json();
+    const { aiPrompt, difficultyLevel, questionCount, language } = await request.json();
 
-    console.log("[API] Received request:", { aiPrompt, difficultyLevel, questionCount });
+    console.log("[API] Received request:", { aiPrompt, difficultyLevel, questionCount, language });
 
     // Validate inputs
     if (!aiPrompt || aiPrompt.trim().length === 0) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Generate prompts
     const systemPrompt = generateSystemPrompt();
-    const userPrompt = generateUserPrompt(aiPrompt, difficultyLevel, questionCount);
+    const userPrompt = generateUserPrompt(aiPrompt, difficultyLevel, questionCount, language);
 
     console.log("[API] Calling OpenRouter API...");
 
