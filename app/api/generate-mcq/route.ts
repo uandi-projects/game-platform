@@ -6,6 +6,7 @@ interface MCQQuestion {
   id: number;
   question: string;
   options: string[];
+  optionDescriptions?: string[];
   correctAnswer: number;
 }
 
@@ -13,6 +14,7 @@ interface AIResponse {
   questions: Array<{
     question: string;
     options: string[];
+    optionDescriptions?: string[];
     correctAnswer: number;
   }>;
 }
@@ -105,6 +107,7 @@ export async function POST(request: NextRequest) {
         id: index + 1,
         question: q.question,
         options: q.options,
+        optionDescriptions: q.optionDescriptions,
         correctAnswer: q.correctAnswer,
       };
     });

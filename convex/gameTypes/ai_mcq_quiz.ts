@@ -4,6 +4,7 @@ export interface MCQQuestion {
   id: number;
   question: string;
   options: string[];
+  optionDescriptions?: string[];
   correctAnswer: number;
 }
 
